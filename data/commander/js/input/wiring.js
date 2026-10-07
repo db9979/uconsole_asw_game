@@ -31,6 +31,7 @@ import { renderSnapshot } from "../views/render.js";
 import { hideMapTooltip, mapTooltipLines, nearestMapInfo, roleMapGeometry, showMapTooltip, stopOpzSweepAnimation, syncOpzSweepAnimation } from "../views/role-map.js";
 import { HELICOPTER_PAGES, queueVisualDraw, renderRoleVisuals, showHelicopterPage, stepHelicopterPage } from "../views/role-visuals.js";
 import { wireOpzDisplayBar } from "../views/opz-display.js";
+import { isContactNamesKey, onContactNames, syncContactNamesButton, toggleContactNames } from "../views/contact-names.js";
 import { applySimlogView, closeSimlogMap, exportSimlog, loadSimlog, queueSimlogMapDraw } from "../views/simlog.js";
 import { renderTracks, selectTrack } from "../views/tracks.js";
 import { on } from "../core/events.js";
@@ -938,6 +939,16 @@ export function init() {
   $("role-map-follow").addEventListener("click", () => {
     const state = roleMapViews[S.v2State?.role]; if (!state) return;
     state.follow = !state.follow; queueVisualDraw();
+  });
+  // Contact names on the charts: the button and Alt+N, as on the uConsole.
+  $("role-map-names").addEventListener("click", toggleContactNames);
+  onContactNames(() => { queueVisualDraw(); queueDraw(); });
+  syncContactNamesButton();
+  window.addEventListener("u-jagd-language", () => queueMicrotask(syncContactNamesButton));
+  document.addEventListener("keydown", (event) => {
+    if (!isContactNamesKey(event)) return;
+    event.preventDefault();
+    toggleContactNames();
   });
   $("role-map").addEventListener("wheel", (event) => {
     event.preventDefault();

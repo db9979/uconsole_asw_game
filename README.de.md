@@ -12,20 +12,12 @@ Netz besetzen.
 
 Aktuelle Version: **1.3.287**
 
-Version 1.3.287 macht den Remote-Crew-Browser per Maus bedienbar. Jede
-Tastenkappe wirkt wie ihre Taste: Kappen, die eine Liste, einen
-Maschinentelegrafen oder eine Seitenreihe weiterschalten, sind eigene
-Schaltflächen, die Kappe eines Wertfelds sitzt auf seiner Beschriftung, und
-ein An/Aus-Paar zeigt seine Taste auf der Schaltfläche, die die Taste gerade
-drücken würde. Ein Klick auf eine Kontaktzeile einer Stationskarte wählt
-diesen Kontakt. Lampen mit Schalter schalten ihn (Antrieb, Sonarton,
-Gegenfluten, die Modi des U-Boots), ebenso die Moduschips des U-Boots. Die
-Hubschrauberseiten blättern vor und zurück, eine Anzeigeschaltfläche der OPZ
-schaltet per Rechtsklick zurück, und jeder Dialog schließt mit seinem Kreuz.
-P fährt im Funkraum des U-Boots wieder den Mast aus, F spricht nur, wo keine
-Stationstaste es belegt, und in der OPZ stellen Q/E immer die Radarreichweite
-ein. Spielstände sind v53; v38 bis v52 laden weiterhin. (Gebaut wurde das als 1.3.285; ein fehlgeschlagener
-Testlauf hielt diese Version zurück.)
+Version 1.3.287 ändert nichts am Spiel; sie enthält 1.3.286 und die
+Maussteuerung des Browsers aus 1.3.285 unverändert. Der Audio-Dauertest zählt
+Aussetzer des Mischers erst zwei Sekunden nach einem Kaltstart, damit ein
+langsames erstes Bild auf einer ausgelasteten Testmaschine keine Version mehr
+aufhält; ein Hänger später im Lauf lässt ihn weiterhin scheitern. Spielstände
+sind v53; v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

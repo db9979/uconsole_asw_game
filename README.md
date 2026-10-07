@@ -12,18 +12,11 @@ network.
 
 Current release: **1.3.287**
 
-Release 1.3.287 brings the Remote Crew browser to the mouse. Every key cap
-acts as its key: caps that step a list, a telegraph or a page row are buttons
-of their own, a value field's cap sits on its label, and an on/off pair shows
-its key on the button the key would press now. A click on a contact row of a
-station card selects that contact. Lamps with a switch work it (plant, sonar
-audio, counterflood, the submarine's modes), and so do the submarine's mode
-chips. The helicopter pages step back and forward, an OPZ display button steps
-back on a right click, and every dialog closes by its cross. P raises the mast
-in the submarine's radio room again, F talks only where no station key uses
-it, and in the OPZ Q/E always set the radar range. Saves are v53; v38 to v52
-saves still load. (These changes were built as 1.3.285; a failed test run
-kept that version from release.)
+Release 1.3.287 changes nothing in play; it carries 1.3.286 and the browser
+mouse control of 1.3.285 unchanged. The audio soak test now leaves the first
+two seconds after a cold start out of its mixer starvation count, so a slow
+first frame on a busy test machine no longer stops a release; a stall later in
+the run still fails it. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

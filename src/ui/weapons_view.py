@@ -430,12 +430,15 @@ def draw_weapons_overlay(game, tr=None) -> None:
                     nato_symbols.draw_motion_vector(
                         s, (tx, ty), getattr(c, "tma_course", None),
                         getattr(c, "tma_speed", None),
-                        view.scale, config.COLOR_DANGER, font=game.font, max_px=120)
+                        view.scale, config.COLOR_DANGER,
+                        font=game.font if map_view.contact_labels_shown(game) else None,
+                        max_px=120)
                     map_view._map_label(
                         s, game, message("weapons.overlay.fix",
                                          contact=observations.contact_display_id(game, c),
                                          source=src),
-                        (int(tx) + 12, int(ty) - 22), config.COLOR_DANGER, r, size=14)
+                        (int(tx) + 12, int(ty) - 22), config.COLOR_DANGER, r, size=14,
+                        contact=True)
             elif not charted:
                 ex = px + 300 * math.sin(brg)
                 ey = py - 300 * math.cos(brg)
@@ -445,7 +448,8 @@ def draw_weapons_overlay(game, tr=None) -> None:
                     s, game, structured_message(
                         "weapons.line.bearing_only.short",
                         contact=observations.contact_display_id(game, c)),
-                    (int(px) + 12, int(py) - 22), config.COLOR_DANGER, r, size=14)
+                    (int(px) + 12, int(py) - 22), config.COLOR_DANGER, r, size=14,
+                    contact=True)
 
 
 @localized

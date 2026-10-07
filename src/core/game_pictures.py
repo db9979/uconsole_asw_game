@@ -600,6 +600,17 @@ class PicturesMixin:
 
     # --- OPZ display settings (display only, kept in settings.json) -------
 
+    def contact_labels_shown(self) -> bool:
+        """Contact names and speeds on the charts (``Alt+N``, settings)."""
+        return bool(getattr(self.preferences, "contact_labels", True))
+
+    def toggle_contact_labels(self) -> None:
+        """Alt+N at every station of both sides: names on the charts on/off."""
+        shown = not self.contact_labels_shown()
+        self._set_preference("contact_labels", shown)
+        self.flash(message("status.contact_labels_on" if shown
+                           else "status.contact_labels_off"), 2.0)
+
     def opz_display_settings(self) -> dict:
         return opz_display.normalize(getattr(self.preferences, "opz_display", ()))
 

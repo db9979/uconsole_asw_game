@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { finite, number, t, unit } from "../core/format.js";
 import { node } from "../views/dom.js";
-import { drawDialPanel, keyed, lampTip, pct, renderLampPanel, signed } from "../views/console-kit.js";
+import { drawDialPanel, keyed, lampTip, modeSwitch, pct, renderLampPanel, signed } from "../views/console-kit.js";
 import { palette } from "../core/palette.js";
 import { visualContext } from "../views/visual-common.js";
 import { drawBoatSection } from "./damage-section.js";
@@ -22,14 +22,16 @@ function lamps(payload) {
   const nuclear = plant.propulsion === "nuclear";
   const rows = [];
   // Each lamp carries the host's note on why it shows what it shows.
-  const add = (key, label, level, value) => rows.push([key, label, level, value, undefined,
+  const add = (key, label, level, value, control) => rows.push([key, label, level, value, control,
     lampTip(`sys_${key}`) ?? lampTip(key === "cavitating" ? "cavitation" : key)]);
   // Propulsion.
   add("motor", t(nuclear ? "uboot_lamp_reactor" : "uboot_lamp_motor"), nav.speed > .05 ? "on" : "off", unit(nav.speed, "kn"));
-  add("silent", t("uboot_chip_silent"), status.silent ? (status.quiet ? "on" : "caution") : "off", onOff(status.silent));
+  add("silent", t("uboot_chip_silent"), status.silent ? (status.quiet ? "on" : "caution") : "off", onOff(status.silent),
+    modeSwitch("uboot_silent"));
   add("cavitating", t("uboot_chip_cavitating"), nav.cavitating ? "alarm" : "off", onOff(nav.cavitating));
   if (!nuclear) {
-    add("snorkel", t("uboot_chip_snorkel"), status.snorkeling ? "caution" : "off", onOff(status.snorkeling));
+    add("snorkel", t("uboot_chip_snorkel"), status.snorkeling ? "caution" : "off", onOff(status.snorkeling),
+      modeSwitch("uboot_snorkel"));
     // The diesels run only while snorkelling; the plant reports their rating.
     add("generator", t("uboot_lamp_generator"), status.snorkeling ? "on" : "off",
       status.snorkeling ? unit(plant.generator_kw, "kW", 0) : onOff(false));
@@ -58,7 +60,7 @@ function lamps(payload) {
   add("hp_air", t("uboot_hp_air"), ballast.blows_left === 0 ? "alarm" : hp !== null && hp < 50 ? "caution" : "on", unit(ballast.hp_air_bar, "bar", 0));
   add("compressor", t("uboot_lamp_compressor"), ballast.compressor ? "on" : "off", onOff(ballast.compressor));
   add("pumps", t("uboot_pumps"), ballast.pumping ? "on" : "off", onOff(ballast.pumping));
-  add("trim_auto", t("uboot_trim_auto"), ballast.auto ? "on" : "off", onOff(ballast.auto));
+  add("trim_auto", t("uboot_trim_auto"), ballast.auto ? "on" : "off", onOff(ballast.auto), modeSwitch("uboot_trim_auto"));
   add("trim", t("uboot_trim_angle"), Math.abs(ballast.trim_deg) > 3 ? "caution" : "on", `${signed(ballast.trim_deg, 1)}°`);
   // Safety: power, water, fire, gas, depth.
   const rooms = dc.compartments;
@@ -70,7 +72,7 @@ function lamps(payload) {
   add("gas", t("uboot_lamp_gas"), count((row) => row.chlorine_pct > 0) ? "alarm" : "off", String(count((row) => row.chlorine_pct > 0)));
   add("overdepth", t("uboot_lamp_overdepth"), nav.depth_m > nav.max_depth_m ? "alarm" : "off", unit(nav.depth_m, "m", 0));
   add("ascent", t("uboot_emergency_ascent"), status.emergency_ascent ? "alarm" : "off", onOff(status.emergency_ascent));
-  add("bottom", t("uboot_chip_bottom"), status.bottomed ? "on" : "off", onOff(status.bottomed));
+  add("bottom", t("uboot_chip_bottom"), status.bottomed ? "on" : "off", onOff(status.bottomed), modeSwitch("uboot_bottom"));
   return rows;
 }
 

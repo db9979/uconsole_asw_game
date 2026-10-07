@@ -10,16 +10,19 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.283**
+Current release: **1.3.285**
 
-Release 1.3.283 brings the mission and unit editors to the mouse. Their
-footers are rows of blue key chips that act like the keys, and every dialog
-has buttons: the path dialog OK and Cancel, the share dialog a close cross
-plus Folder, Path and Import (or Overwrite), the delete question Yes
-and No. Both editors close with the cross at the top right. Esc and F5 no
-longer close the editor or start a mission while one of its dialogs is
-open. In the unit editor, Ctrl+G opens the selected profile and starts the
-Wikipedia import. Saves are v53; v38 to v52 saves still load.
+Release 1.3.285 brings the Remote Crew browser to the mouse. Every key cap
+acts as its key: caps that step a list, a telegraph or a page row are buttons
+of their own, a value field's cap sits on its label, and an on/off pair shows
+its key on the button the key would press now. A click on a contact row of a
+station card selects that contact. Lamps with a switch work it (plant, sonar
+audio, counterflood, the submarine's modes), and so do the submarine's mode
+chips. The helicopter pages step back and forward, an OPZ display button steps
+back on a right click, and every dialog closes by its cross. P raises the mast
+in the submarine's radio room again, F talks only where no station key uses
+it, and in the OPZ Q/E always set the radar range. Saves are v53; v38 to v52
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

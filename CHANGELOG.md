@@ -4,6 +4,20 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.285
+
+Release 1.3.285 brings the Remote Crew browser to the mouse. Every key cap
+acts as its key: caps that step a list, a telegraph or a page row are buttons
+of their own, a value field's cap sits on its label, and an on/off pair shows
+its key on the button the key would press now. A click on a contact row of a
+station card selects that contact. Lamps with a switch work it (plant, sonar
+audio, counterflood, the submarine's modes), and so do the submarine's mode
+chips. The helicopter pages step back and forward, an OPZ display button steps
+back on a right click, and every dialog closes by its cross. P raises the mast
+in the submarine's radio room again, F talks only where no station key uses
+it, and in the OPZ Q/E always set the radar range. Saves are v53; v38 to v52
+saves still load.
+
 ## 1.3.283
 
 Release 1.3.283 brings the mission and unit editors to the mouse. Their

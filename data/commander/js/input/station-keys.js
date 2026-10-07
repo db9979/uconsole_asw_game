@@ -163,6 +163,13 @@ export const STATION_KEYS = [
   [["uboot_weapons"], "Shift+W", ["#uboot-wire-cut"], "click", "help.uboot.wire_cut"],
 ];
 
+// Keys of every station (the status bar and the docks): the cap sits on the
+// button the key presses, whatever station is held.
+const GLOBAL_CAPS = [
+  ["#workstation-weather", "0"], ["#workstation-help", "?"], ["#tab-guide", "?"], ["#voice-ptt", "F"],
+  ['[data-dock-toggle="left"]', "Alt+,"], ['[data-dock-toggle="right"]', "Alt+."], ['[data-dock-toggle="log"]', "Alt+L"],
+];
+
 const GERMAN = {Ctrl: "Strg", Shift: "Umschalt", Enter: "Eingabe", Backspace: "Rücktaste", PageUp: "Bild↑", PageDown: "Bild↓", Home: "Pos1",
   Space: "Leertaste", ArrowUp: "↑", ArrowDown: "↓"};
 const ENGLISH = {PageUp: "PgUp", PageDown: "PgDn", ArrowUp: "↑", ArrowDown: "↓"};
@@ -189,7 +196,14 @@ function reachable(element, how) {
   return how.startsWith("cycle") ? element && !element.disabled : usable(element);
 }
 
-const resolve = (target) => typeof target === "function" ? target() : document.querySelector(target);
+// The first usable match: one control can sit on several cards of a station
+// (the boat's mast switch is on the ESM, scope and radio cards), and only the
+// visible one may take the key.
+function resolve(target, how = "click") {
+  if (typeof target === "function") return target();
+  const all = [...document.querySelectorAll(target)];
+  return all.find((item) => reachable(item, how)) ?? all[0] ?? null;
+}
 
 // The element that carries the cap: a value field's submit button, a
 // checkbox's label, a list's own label; otherwise the control itself.
@@ -202,22 +216,70 @@ function capHost(element) {
   return element;
 }
 
+// A key that steps a list, a telegraph or a page row does more than a click
+// on its control would, so its cap is a real button that presses the key.
+const pressesKey = (how) => /^(step|order|cycle)/.test(how ?? "click");
+
+// A value field's key focuses the field: its label does the same on a click.
+function focusHost(element) {
+  return (element.id && document.querySelector(`label[for="${element.id}"]`)) ?? element.closest("label") ?? capHost(element);
+}
+
+// An on/off pair's key presses the button not pressed now: the cap sits there.
+function toggleHost(element) {
+  const pair = [...document.querySelectorAll(`[data-uboot-mode="${element.dataset.ubootMode}"]`)].filter(usable);
+  return pair.find((button) => button.getAttribute("aria-pressed") !== "true") ?? element;
+}
+
+// Where a key button goes: into a list's label or a button row, else after the control.
+function buttonHost(element) {
+  if (element.matches("select")) return document.querySelector(`label[for="${element.id}"]`) ?? element.closest("label") ?? element;
+  return element;
+}
+const inside = (host) => host.matches("label, [role=tablist]");
+
+// The key a cap button presses, through the same binding as the keyboard.
+export function pressKey(key, role = S.v2State?.role) {
+  const want = parse(key);
+  const binding = bindingFor(role, {key: want.key === "Space" ? " " : want.key, ctrlKey: want.ctrl, shiftKey: Boolean(want.shift)});
+  if (!binding) return false;
+  apply(binding.element, binding.how);
+  return true;
+}
+
+function keyButton(key) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "key-cap key-cap-button";
+  button.dataset.capKey = key;
+  button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); pressKey(key); });
+  return button;
+}
+
 // Caps of the held station only: several stations share one control (the
 // helicopter's live sonar button is the sonar's), and a cap must name a key
 // that works here.
 const marked = new Set();
+const keyButtons = new Map();
 
 // Called after every render too (rows are rebuilt and lose their caps); only
 // changed caps are written, so an unchanged page sees no DOM mutation.
 export function markStationKeys(role = S.v2State?.role) {
-  const seen = new Map();
-  for (const [roles, key, targets, how] of STATION_KEYS) for (const target of targets) {
+  const seen = new Map(), pressed = new Map();
+  for (const [roles, key, targets, how = "click"] of STATION_KEYS) for (const target of targets) {
     if (!roles.includes(role)) continue;
-    const element = resolve(target);
+    const element = resolve(target, how);
     if (!element) continue;
-    const host = (how ?? "").match(/^(step|order)/) && !element.matches("select") ? element : capHost(element);
+    if (pressesKey(how)) {
+      const host = buttonHost(element);
+      pressed.set(host, [...new Set([...(pressed.get(host) ?? []), key])]);
+      continue;
+    }
+    const host = how === "focus" ? focusHost(element) : how === "toggle" ? toggleHost(element) : capHost(element);
     seen.set(host, [...(seen.get(host) ?? []), keyLabel(key)]);
   }
+  for (const [selector, key] of GLOBAL_CAPS) for (const host of document.querySelectorAll(selector))
+    seen.set(host, [...(seen.get(host) ?? []), keyLabel(key)]);
   for (const host of [...marked]) if (!seen.has(host)) {
     delete host.dataset.keycap;
     marked.delete(host);
@@ -226,6 +288,30 @@ export function markStationKeys(role = S.v2State?.role) {
     const text = [...new Set(caps)].join(" / ");
     if (host.dataset.keycap !== text) host.dataset.keycap = text;
     marked.add(host);
+  }
+  for (const [host, entry] of [...keyButtons]) if (!pressed.has(host)) {
+    for (const button of entry.buttons.values()) button.remove();
+    entry.row?.remove();
+    keyButtons.delete(host);
+  }
+  for (const [host, keys] of pressed) {
+    // A label or page row takes its caps inside; a button row (the boat's
+    // telegraph) gets a row of caps after it, so its own grid stays as it is.
+    const entry = keyButtons.get(host) ?? {buttons: new Map(), row: inside(host) ? null : document.createElement("span")};
+    if (entry.row) {
+      entry.row.className = "key-cap-row";
+      if (host.nextSibling !== entry.row) host.after(entry.row);
+    }
+    const box = entry.row ?? host;
+    for (const [key, button] of [...entry.buttons]) if (!keys.includes(key)) { button.remove(); entry.buttons.delete(key); }
+    for (const key of keys) {
+      const button = entry.buttons.get(key) ?? keyButton(key);
+      entry.buttons.set(key, button);
+      const text = keyLabel(key);
+      if (button.textContent !== text) button.textContent = text;
+      if (button.parentElement !== box) box.append(button);
+    }
+    keyButtons.set(host, entry);
   }
 }
 
@@ -240,7 +326,7 @@ function step(element, delta, wrap = false) {
     element.dispatchEvent(new Event("change", {bubbles: true}));
     return true;
   }
-  const tabs = [...element.querySelectorAll("button")].filter(usable);
+  const tabs = [...element.querySelectorAll("button:not(.key-cap)")].filter(usable);
   if (!tabs.length) return false;
   const pressed = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true" || tab.getAttribute("aria-pressed") === "true");
   const index = pressed < 0 ? (delta > 0 ? 0 : tabs.length - 1) : (pressed + delta + tabs.length) % tabs.length;
@@ -283,7 +369,7 @@ export function bindingFor(role, event) {
     if (!binding[0].includes(role) || want.key !== key || want.ctrl !== event.ctrlKey ||
         (want.shift !== null && want.shift !== event.shiftKey)) continue;
     const how = binding[3] ?? "click";
-    const element = binding[2].map(resolve).find((item) => reachable(item, how));
+    const element = binding[2].map((target) => resolve(target, how)).find((item) => reachable(item, how));
     if (element) return {element, how};
   }
   return null;

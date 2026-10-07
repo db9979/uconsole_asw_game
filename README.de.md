@@ -10,18 +10,21 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.283**
+Aktuelle Version: **1.3.285**
 
-Version 1.3.283 macht den Missions- und den Einheiten-Editor per Maus
-bedienbar. Ihre Fußleisten sind Reihen blauer Tastenchips, die wie die
-Tasten wirken, und jeder Dialog hat Schaltflächen: der Pfaddialog OK und
-Abbrechen, der Austauschdialog ein Schließkreuz sowie Ordner, Pfad und
-Importieren (oder Überschreiben), die Löschfrage Ja und Nein. Beide
-Editoren schließen mit dem Kreuz oben rechts. Esc und F5 schließen den
-Editor nicht mehr und starten keine Mission, solange einer seiner Dialoge
-offen ist. Im Einheiten-Editor öffnet Strg+G das gewählte Profil und
-startet den Wikipedia-Import. Spielstände sind v53; v38 bis v52 laden
-weiterhin.
+Version 1.3.285 macht den Remote-Crew-Browser per Maus bedienbar. Jede
+Tastenkappe wirkt wie ihre Taste: Kappen, die eine Liste, einen
+Maschinentelegrafen oder eine Seitenreihe weiterschalten, sind eigene
+Schaltflächen, die Kappe eines Wertfelds sitzt auf seiner Beschriftung, und
+ein An/Aus-Paar zeigt seine Taste auf der Schaltfläche, die die Taste gerade
+drücken würde. Ein Klick auf eine Kontaktzeile einer Stationskarte wählt
+diesen Kontakt. Lampen mit Schalter schalten ihn (Antrieb, Sonarton,
+Gegenfluten, die Modi des U-Boots), ebenso die Moduschips des U-Boots. Die
+Hubschrauberseiten blättern vor und zurück, eine Anzeigeschaltfläche der OPZ
+schaltet per Rechtsklick zurück, und jeder Dialog schließt mit seinem Kreuz.
+P fährt im Funkraum des U-Boots wieder den Mast aus, F spricht nur, wo keine
+Stationstaste es belegt, und in der OPZ stellen Q/E immer die Radarreichweite
+ein. Spielstände sind v53; v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

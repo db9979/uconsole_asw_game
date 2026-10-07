@@ -2,6 +2,7 @@ import { S } from "../state/store.js";
 import { $, affiliations, domains } from "../core/base.js";
 import { classificationText, enumText, number, t, unit } from "../core/format.js";
 import { formatPosition } from "../core/geo.js";
+import { emit } from "../core/events.js";
 import { sendStationAction } from "../net/commands.js";
 import { animatedPlots, syncPlotAnimation } from "../plot/clock.js";
 import { spectrumStates } from "../plot/spectrum.js";
@@ -131,9 +132,17 @@ export function fillFireTargets(id, rows, designated = null) {
   select.value = rows.some((row) => row.ref === previous) ? previous : "";
   if (previous && !select.value) clearFireConfirmation();
 }
+// A click on a row of a published contact selects it, as a click in the
+// contact list does; the row's own buttons keep their own action.
+function selectRow(event) {
+  const article = event.currentTarget;
+  if (!article.dataset.trackRef || event.target.closest("button, a, input, select, textarea, label, summary")) return;
+  emit("track:select", article.dataset.trackRef);
+}
 export function stationRows(element, rows, entryBuilder, emptyKey = "station_none", actionBuilder = null) {
   const existing = new Map([...element.children].map((child) => [child.dataset.rowKey, child]));
   const live = new Set();
+  const tracks = new Set((S.snapshot?.tracks ?? []).map((track) => String(track.ref)));
   rows.forEach((row, index) => {
     const key = String(row.ref ?? row.key ?? row.team ?? row.tube ?? index);
     live.add(key);
@@ -141,7 +150,11 @@ export function stationRows(element, rows, entryBuilder, emptyKey = "station_non
     if (!article) {
       article = node("article", undefined, "station-row"); article.dataset.rowKey = key;
       article.append(node("h4"), node("dl", undefined, "detail-metrics"), node("div", undefined, "station-row-actions"));
+      article.addEventListener("click", selectRow);
     }
+    const ref = row.ref !== undefined && row.ref !== null && tracks.has(String(row.ref)) ? String(row.ref) : "";
+    if ((article.dataset.trackRef ?? "") !== ref) { if (ref) article.dataset.trackRef = ref; else delete article.dataset.trackRef; }
+    article.classList.toggle("track-selected", Boolean(ref) && ref === String(S.selected ?? ""));
     const entries = entryBuilder(row, index);
     const title = entries.shift();
     article.firstChild.textContent = String(title[1] ?? "");

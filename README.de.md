@@ -10,17 +10,15 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.293**
+Aktuelle Version: **1.3.294**
 
-Version 1.3.293 lässt die uConsole wieder große Updates laden. Ein
-Release mit vielen neuen Handbuchbildern ist viele MB groß, und der
-Updater brach jeden Git-Download nach 60 s ab; im langsameren WLAN
-scheiterte „Jetzt updaten“ deshalb jedes Mal und das Spiel blieb auf
-seiner alten Version. Ein Download darf jetzt bis zu 30 Minuten dauern,
-ein hängender bricht weiter nach 15 s unter 1 KB/s ab, und das
-Startfenster zeigt beim Warten „Lade Update“. Eine uConsole mit 1.3.292
-oder älter holt das Release einmal von Hand (siehe uConsole-Anleitung).
-Spielstände sind v53; v38 bis v52 laden weiter.
+Version 1.3.294 verhindert, dass das Sonar bei ausgelastetem Rechner ein
+Stück Klang wiederholt. Endete ein Klangblock, hielt die Audio-Pumpe den
+Augenblick vor dem nächsten Block manchmal für einen hängenden Kanal und
+spielte diesen Block noch einmal von vorn, ein kurzes Stocken, an dem auch
+der automatische Audio-Test scheiterte. Jetzt wiederholt sie einen Block
+nur noch, wenn der Kanal ihn wirklich verloren hat. Spielstände sind v53;
+v38 bis v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

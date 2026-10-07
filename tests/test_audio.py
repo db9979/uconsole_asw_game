@@ -994,12 +994,20 @@ def test_pump_replays_a_queued_sound_stranded_on_an_idle_channel(mixer, monkeypa
         engine._pump_sonar_once()
     sonar.play.assert_called_once()
     assert engine.sonar_queue_stranded == 0
-    # Idle with the queue still held: one iteration may be the instant
-    # before the callback promotes it, the second one is stranded.
+    # Idle with the queue held and the ended sound still current: the
+    # callback waits for the GIL to promote the queue (measured up to ~90 ms
+    # under load). It plays next; replaying it would repeat the block.
     sonar.get_busy.return_value = False
-    clock[0] += .02
-    engine._pump_sonar_once()
+    sonar.get_sound.return_value = object()
+    for _ in range(6):
+        clock[0] += .02
+        engine._pump_sonar_once()
     sonar.play.assert_called_once()
+    assert engine.sonar_queue_stranded == 0
+    assert engine.sonar_channel_idle == 0
+    # The callback found no queue and dropped the current sound: the queued
+    # one is stranded for good.
+    sonar.get_sound.return_value = None
     clock[0] += .02
     engine._pump_sonar_once()
     assert sonar.play.call_args.args[0] is stranded

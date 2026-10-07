@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.294
+
+Release 1.3.294 keeps the sonar from repeating a piece of sound when the
+computer is busy. When a sound block ended, the pump sometimes took the
+moment before the next block started for a stuck channel and played that
+block again from its beginning, a short stutter that also failed the
+automatic audio test. It now replays a block only when the channel really
+lost it. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.293
 
 Release 1.3.293 lets the uConsole download large updates again. A

@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.294
+
+Version 1.3.294 verhindert, dass das Sonar bei ausgelastetem Rechner ein
+Stück Klang wiederholt. Endete ein Klangblock, hielt die Audio-Pumpe den
+Augenblick vor dem nächsten Block manchmal für einen hängenden Kanal und
+spielte diesen Block noch einmal von vorn, ein kurzes Stocken, an dem auch
+der automatische Audio-Test scheiterte. Jetzt wiederholt sie einen Block
+nur noch, wenn der Kanal ihn wirklich verloren hat. Spielstände sind v53;
+v38 bis v52 laden weiter.
+
 ## 1.3.293
 
 Version 1.3.293 lässt die uConsole wieder große Updates laden. Ein

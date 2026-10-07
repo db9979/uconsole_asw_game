@@ -477,6 +477,17 @@ class SaveMixin:
                         "snapshot": dict(pd["snapshot"]),
                     })
 
+    def _enemy_seeker_target_ref(self, target):
+        """What a hostile torpedo's seeker holds, as a save reference: the
+        frigate, a Nixie, or a merchant a boat's shot homes on (1.3.291)."""
+        if target is self.ship:
+            return "ship"
+        if target in self.nixies:
+            return f"nixie:{target.seq}"
+        if any(target is ship for ship in self.civilians):
+            return f"civilian:{target.id}"
+        return None
+
     def save_state(self) -> dict:
         """Return the complete canonical save state for this release."""
         opz_map = self._opz_map_save_values()
@@ -856,9 +867,7 @@ class SaveMixin:
                        seeker_acquired=t.seeker_acquired,
                        launch_platform_id=t.launch_platform_id,
                        launch_weapon_key=t.launch_weapon_key,
-                       seeker_target=("ship" if t._seeker_target is self.ship else
-                                     f"nixie:{t._seeker_target.seq}"
-                                     if t._seeker_target in self.nixies else None),
+                       seeker_target=self._enemy_seeker_target_ref(t._seeker_target),
                        time_since_launch=t.time_since_launch,
                        energy_s=t.energy_s, motor_fraction=t.motor_fraction,
                        depth_rate=t.depth_rate, target_depth=t.target_depth,
@@ -1637,16 +1646,15 @@ class SaveMixin:
             self.enemy_torpedoes[-1].target_depth = ed["target_depth"]
             seeker_target = ed["seeker_target"]
             self.enemy_torpedoes[-1]._seeker_target = (
-                (self.ship if seeker_target == "ship" else
-                 next((item for item in self.nixies
-                       if seeker_target == f"nixie:{item.seq}"), None))
+                next((item for item in (self.ship, *self.nixies, *self.civilians)
+                      if self._enemy_seeker_target_ref(item) == seeker_target), None)
                 if self.enemy_torpedoes[-1].seeker_acquired else None)
 
     def _restore_links_and_stations(self, data: dict, by_id,
                                     restore_platform) -> None:
         """Torpedo targets, missiles, buoys, flights, sonar, crew, weapon
-        settings and the torpedo cues (``serial`` keeps the last torpedo
-        of the target loop, as before)."""
+        settings and the torpedo cues (as ``_update_torpedo_cues`` holds
+        them)."""
         by_id.update((t.id, t) for t in self.enemy_torpedoes)
         for torpedo, td in zip(self.torpedoes, data["torpedoes_in_flight"]):
             torpedo.target = by_id.get(td.get("target_id"))
@@ -1734,8 +1742,9 @@ class SaveMixin:
         self.torpedo_cues = []
         self._torpedo_cues_reported = weakref.WeakKeyDictionary()
         for cue in self.current_torpedo_cues():
-            self._torpedo_cues_reported.setdefault(cue["owner"], set()).add(cue["report"])
-            self.torpedo_cues.append(dict(cue, serial=id(torpedo)))
+            owner, report = cue.pop("owner"), cue.pop("report")
+            self._torpedo_cues_reported.setdefault(owner, set()).add(report)
+            self.torpedo_cues.append(cue)
 
     def _restore_rngs(self, data: dict, rng) -> None:
         # Phase 2: RNG-Zustaende (deterministischer Fortgang)

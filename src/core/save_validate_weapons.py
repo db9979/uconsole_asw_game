@@ -278,7 +278,9 @@ def check_player_torpedoes(data, torpedoes, entity_ids, runtime_catalog,
                 or not bounded(torpedo.get("speed_kn", Torpedo.SPEED_KN), 0, 10000)
                 or not bounded(torpedo.get("depth", 5), 0, 10000)
                 or not bounded(torpedo.get("target_depth", 5), 0, 10000)
-                or not bounded(torpedo.get("travel", 0), 0, distance)
+                or not bounded(torpedo.get("travel", 0), 0, torpedo_dyn.travel_bound_nm(
+                    distance, torpedo.get("speed_kn", Torpedo.SPEED_KN),
+                    config.TORP_SPOOLUP_S))
                 or not bounded(torpedo.get("midcourse_timer", 0), 0, Torpedo.WIRE_BREAK_S)
                 or not {"search_phase", "midcourse", "pattern", "enable_nm",
                         "turns_done"} <= set(torpedo)

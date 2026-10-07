@@ -87,3 +87,39 @@ def test_nightly_workflow_soaks_every_scenario():
     block = text[text.index("scenario: ["):]
     block = block[:block.index("]")]
     assert re.findall(r"[a-z0-9_]+", block.split("[", 1)[1]) == list(config.SCENARIO_ORDER)
+
+
+def test_continuation_check_gives_both_copies_the_same_entity_ids(monkeypatch):
+    # Both loaded copies share the class-wide ID counters of this process; a
+    # weapon one copy launches must not shift the other's IDs (a false
+    # "diverged" report), and the soak's own game keeps its counters.
+    import argparse
+
+    from src.core.game import Game
+    from src.weapons.torpedo import EnemyTorpedo
+
+    for cls in soak_game.ID_CLASSES:
+        monkeypatch.setattr(cls, "_next_id", cls._next_id)
+    game = Game(seed=3, start_menu=False, show_splash=False, audio_enabled=False,
+                language="en")
+    assert game.start_new_game("s1_patrouille", "fixed", seed=3)
+    game.update(0.1)
+    launches = []
+    original_update = Game.update
+
+    def update(self, dt):
+        original_update(self, dt)
+        if not launches.count(id(self)):
+            launches.append(id(self))
+            self.enemy_torpedoes.append(EnemyTorpedo(
+                self.ship.x + 9, self.ship.y, 270, 50, 1,
+                guidance_x=self.ship.x, guidance_y=self.ship.y))
+
+    monkeypatch.setattr(Game, "update", update)
+    soak = soak_game.Soak(argparse.Namespace(dump_dir=None, check_s=1.0),
+                          "s1_patrouille", "frigate", 3)
+    before = [cls._next_id for cls in soak_game.ID_CLASSES]
+    soak.check_continuation(game)
+    assert len(launches) == 2
+    assert soak.failures == []
+    assert [cls._next_id for cls in soak_game.ID_CLASSES] == before

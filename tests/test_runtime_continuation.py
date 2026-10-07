@@ -237,6 +237,69 @@ def test_terminal_seekers_restore_actual_target_and_command_identity(game):
     assert game.essms[0].target_id == 39 and game.essms[0].seeker_acquired
 
 
+def test_enemy_seeker_holding_a_merchant_survives_a_save(game):
+    # A boat's shot at a convoy may home on a merchant; the save used to drop
+    # it, so the save held an acquired seeker without a target and was refused.
+    torpedo = game.enemy_torpedoes[0]
+    torpedo.terminal_active = torpedo.seeker_acquired = True
+    torpedo._seeker_target = game.civilians[0]
+    state = json.loads(json.dumps(game.save_state(), allow_nan=False))
+    assert state["enemy_torpedoes"][0]["seeker_target"] == (
+        f"civilian:{game.civilians[0].id}")
+    game.load_state(state)
+    assert game.enemy_torpedoes[0]._seeker_target is game.civilians[0]
+    state["enemy_torpedoes"][0]["seeker_target"] = "civilian:999999"
+    assert not game._load_save_data(state)
+
+
+def test_enemy_torpedo_searching_beyond_catalog_range_loads(game):
+    # Searching at the quiet seeker speed stretches the store (power ~ v^3),
+    # so a weapon may run past its catalog range and its save must load.
+    from src.physics import torpedo_dyn
+    torpedo = game.enemy_torpedoes[0]
+    bound = torpedo_dyn.travel_bound_nm(
+        torpedo.range_nm, torpedo.speed_kn, config.TORP_SPOOLUP_S)
+    assert bound > torpedo.range_nm / torpedo_dyn.SEEKER_SEARCH_FRACTION ** 2
+    torpedo.travel = torpedo.range_nm * 1.5
+    game.torpedoes[0].travel = game.torpedoes[0].range_nm * 1.5
+    state = json.loads(json.dumps(game.save_state(), allow_nan=False))
+    game.load_state(state)
+    assert game.enemy_torpedoes[0].travel == torpedo.range_nm * 1.5
+    state["enemy_torpedoes"][0]["travel"] = bound * 1.01
+    assert not game._load_save_data(state)
+
+
+def test_search_run_travel_stays_within_the_save_bound():
+    # A weapon that only searches burns its whole store at the quiet speed
+    # and coasts down: its run must stay inside travel_bound_nm.
+    from src.physics import torpedo_dyn
+
+    class _Ship:
+        x, y, depth = 500.0, 500.0, 5.0
+
+    torpedo = EnemyTorpedo(0.0, 0.0, 90, 50, 1, guidance_x=0.0, guidance_y=0.0)
+    torpedo.terminal_active = True
+    while torpedo.state == "RUN":
+        torpedo.update(.1, _Ship())
+    assert torpedo.travel > torpedo.range_nm
+    assert torpedo.travel <= torpedo_dyn.travel_bound_nm(
+        torpedo.range_nm, torpedo.speed_kn, config.TORP_SPOOLUP_S)
+
+
+def test_torpedo_cue_restore_without_own_torpedoes_in_the_water(game):
+    # The cues restored after a load keep their own serial; with no own
+    # torpedo in the water the restore used to raise and refuse the save.
+    game.torpedoes = []
+    torpedo = game.enemy_torpedoes[0]
+    torpedo.x, torpedo.y = game.ship.x + .5, game.ship.y
+    torpedo.terminal_active = True
+    assert any(cue["kind"] == "seeker" for cue in game.current_torpedo_cues())
+    game.load_state(json.loads(json.dumps(game.save_state(), allow_nan=False)))
+    assert [cue["serial"] for cue in game.torpedo_cues] == [
+        id(game.enemy_torpedoes[0])]
+    assert all("owner" not in cue for cue in game.torpedo_cues)
+
+
 def test_essm_lost_track_retains_observed_datum_without_live_object(game):
     weapon = game.essms[0]
     weapon.target = None

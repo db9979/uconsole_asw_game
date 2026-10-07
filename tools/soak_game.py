@@ -49,8 +49,15 @@ import pygame  # noqa: E402
 from src.core import config  # noqa: E402
 from src.core.game import Game  # noqa: E402
 from src.core.game_save import _same_save_value  # noqa: E402
+from src.enemies.animal import Animal  # noqa: E402
+from src.enemies.decoy import Decoy  # noqa: E402
+from src.enemies.sub import Sub  # noqa: E402
+from src.enemies.surface import SurfaceShip  # noqa: E402
+from src.weapons.torpedo import EnemyTorpedo  # noqa: E402
 
 DT = 0.1
+# The classes whose entity IDs come from a class-wide counter (as the loader's).
+ID_CLASSES = (Sub, Animal, SurfaceShip, Decoy, EnemyTorpedo)
 SIDES = ("frigate", "uboot")
 _KEYS = ([getattr(pygame, f"K_{n}") for n in range(10)]
          + [getattr(pygame, f"K_{c}") for c in "abcdefghijklmnopqrstuvwxyz"]
@@ -247,7 +254,8 @@ class Soak:
             self.failures.append((kind, detail))
 
     def dump(self, document: dict, game) -> str:
-        """Keep a refused save in ``--dump-dir``; the report names the file."""
+        """Keep a refused or diverging save in ``--dump-dir``; the report
+        names the file."""
         if not self.args.dump_dir:
             return ""
         os.makedirs(self.args.dump_dir, exist_ok=True)
@@ -263,6 +271,16 @@ class Soak:
 
     def check_continuation(self, game) -> None:
         self.checks += 1
+        # The soak's own game resumes from its ID counters as if no check had
+        # run (the loads and both copies allocate from the same counters).
+        before = [cls._next_id for cls in ID_CLASSES]
+        try:
+            self._check_continuation(game)
+        finally:
+            for cls, value in zip(ID_CLASSES, before):
+                cls._next_id = value
+
+    def _check_continuation(self, game) -> None:
         document = json.loads(json.dumps(game.save_state(), allow_nan=False))
         twin = Game(seed=1, start_menu=True, show_splash=False, audio_enabled=False,
                     language="en")
@@ -275,13 +293,23 @@ class Soak:
         if not original._load_save_data(json.loads(json.dumps(document))):
             self.fail("save", f"t={game.sim_t:.0f}s: the save does not load twice")
             return
-        for _ in range(int(self.args.check_s / DT)):
-            original.update(DT)
-            twin.update(DT)
-        if not _same_save_value(_comparable(original), _comparable(twin)):
+        # Entity IDs come from class-wide counters that every Game in this
+        # process shares, while a player's load runs alone in its process.
+        # So each copy continues from the same counters; run side by side,
+        # a weapon one copy launches would take the next ID and the other's
+        # another, and the ID-keyed sensor noise would differ.
+        counters = [cls._next_id for cls in ID_CLASSES]
+        for loaded in (original, twin):
+            for cls, value in zip(ID_CLASSES, counters):
+                cls._next_id = value
+            for _ in range(int(self.args.check_s / DT)):
+                loaded.update(DT)
+        left, right = _comparable(original), _comparable(twin)
+        if not _same_save_value(left, right):
             self.fail("determinism",
                       f"t={game.sim_t:.0f}s: two loads of one save diverged within "
-                      f"{self.args.check_s:.0f} s")
+                      f"{self.args.check_s:.0f} s\nfirst difference: "
+                      f"{first_difference(left, right)}" + self.dump(document, game))
 
     def run(self) -> None:
         operator = Operator(self.seed)

@@ -68,6 +68,10 @@ PROBE = r'''
   run().then(() => { root.dataset.handoverTest = 'passed'; }, (error) => {
     root.dataset.handoverTest = 'failed';
     root.dataset.failure = String(error.stack || error);
+    // What the page showed when it gave up, for the report below.
+    root.dataset.roleAtFailure = String(document.body.dataset.remoteRole);
+    root.dataset.bandAtFailure = String($('handover-band').hidden);
+    root.dataset.pairingAtFailure = String($('pairing').hidden);
   });
 })();
 '''
@@ -155,7 +159,10 @@ def test_holder_sees_request_and_hands_station_over(tmp_path, monkeypatch):
         process.wait(timeout=5)
         console.stop()
         game.audio.shutdown()
-    assert root.get("handoverTest") == "passed", (root, {
+    # The failure first: the whole dataset is cut short in the report.
+    assert root.get("handoverTest") == "passed", (
+        root.get("failure"), root.get("roleAtFailure"), root.get("bandAtFailure"),
+        root.get("pairingAtFailure"), root.get("stage"), {
         name: (status["stations"]["weapons"]["leased"], status["stations"]["weapons"]["requested"])
         for name, status in statuses.items()})
     assert root["bandBefore"] == "true"

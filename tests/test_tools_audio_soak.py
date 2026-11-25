@@ -60,3 +60,12 @@ def test_warmup_baseline_counts_only_starvation_after_the_cold_start():
     assert audio[-1]["channel_idle"] - audio_soak._warmup_baseline(perf, audio, 2.0)["channel_idle"] == 1
     assert audio_soak._warmup_baseline(perf, audio, 0.0) == {}
     assert audio_soak._warmup_baseline([], audio, 2.0) == {}
+
+
+def test_a_counted_failure_says_when_it_happened():
+    audio_soak = _load_tool()
+    perf = [{"t": 10.0}]
+    rows = [{"t": 11.0, "channel_idle": 0}, {"t": 14.5, "channel_idle": 1,
+                                               "queue_stranded": 1}]
+    steps = audio_soak._counter_steps(perf, rows, rows[0], "channel_idle")
+    assert len(steps) == 1 and "+4.5s" in steps[0] and "queue_stranded 1" in steps[0]

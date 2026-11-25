@@ -66,6 +66,16 @@ class AudioEngine:
     # waits for the GIL before it promotes the queue; under load that wait
     # was measured up to ~90 ms, and the sound plays on its own afterwards.
     SONAR_STRANDED_S = 0.25
+    # The mixer's own clock against the wall clock. A starved SDL audio thread
+    # falls behind (the queued block is still waiting when the handed-over
+    # audio should have reached it) and then mixes several buffers back to
+    # back to catch up, which plays the current and the queued block faster
+    # than real time and can run the channel dry between two on-time pump
+    # iterations (SDL's dummy driver on a loaded CI runner). An idle channel
+    # within SONAR_MIXER_SLIP_WINDOW_S of such a slip, or before the handed-over
+    # audio could have finished in real time, is the mixer's, not the pump's.
+    SONAR_MIXER_SLIP_S = 0.05
+    SONAR_MIXER_SLIP_WINDOW_S = 0.75
     SONAR_VOLUME_SETTLE_S = 0.2
     # Buffered blocks refused because the queue is full for this long: the
     # pump no longer drains it, so the stream restarts.
@@ -124,6 +134,11 @@ class AudioEngine:
         # interpreter (a slow first frame, a loaded CI runner), which
         # pump_late already records; not a playback fault.
         self.sonar_channel_idle_late = 0
+        # The same after the mixer's clock slipped (SONAR_MIXER_SLIP_S).
+        self.sonar_channel_idle_clock = 0
+        self._sonar_handed_end = None
+        self._sonar_queued_due = None
+        self._sonar_slipped_at = None
         # Worker scheduling: iterations later than SONAR_PUMP_LATE_S, and the
         # longest gap between two iterations since the last debug line.
         self.sonar_pump_late = 0
@@ -709,6 +724,11 @@ class AudioEngine:
                     self.sonar_pump_late_max_s = max(self.sonar_pump_late_max_s, gap)
                 self._sonar_pump_last_at = now
                 self._restore_sonar_volume(now)
+                if (self._sonar_channel.get_queue() is not None
+                        and self._sonar_queued_due is not None
+                        and now > self._sonar_queued_due + self.SONAR_MIXER_SLIP_S):
+                    # The queued block should be playing by now: the mixer is behind.
+                    self._sonar_slipped_at = now
                 if self._sonar_channel.get_queue() is not None:
                     if self._sonar_queue_busy_since is None or late:
                         # A late pump cannot tell how long the slot was held.
@@ -731,6 +751,8 @@ class AudioEngine:
                     # (the next play() fades in) that no other counter sees.
                     if late:
                         self.sonar_channel_idle_late += 1
+                    elif self._mixer_clock_slipped(now):
+                        self.sonar_channel_idle_clock += 1
                     else:
                         self.sonar_channel_idle += 1
                 if (self._sonar_refilling and self._sonar_buffer_duration
@@ -781,11 +803,43 @@ class AudioEngine:
                     self.sonar_neutral_blocks += 1
                 if self._sonar_channel.get_busy():
                     self._sonar_channel.queue(sound)
+                    self._note_sonar_handover(sound, queued=True)
                 else:
                     self._sonar_channel.play(sound, fade_ms=self.FADE_MS)
                     self._sonar_fade_at = time.monotonic()
+                    self._note_sonar_handover(sound, queued=False)
             except pygame.error:
                 self._latch_device_error()
+
+    def _note_sonar_handover(self, sound, queued: bool) -> None:
+        """Track when the handed-over audio ends in real time (under the
+        sonar lock): play() starts a new schedule, queue() appends to it."""
+        now = time.monotonic()
+        try:
+            length = float(sound.get_length())
+        except (pygame.error, AttributeError, TypeError, ValueError):
+            self._sonar_handed_end = self._sonar_queued_due = None
+            return
+        if queued and self._sonar_handed_end is not None:
+            due = self._sonar_handed_end
+            if due < now - self.SONAR_MIXER_SLIP_S:
+                # The channel is still busy past the end of its audio.
+                self._sonar_slipped_at = now
+            self._sonar_queued_due = due
+            self._sonar_handed_end = max(due, now) + length
+        else:
+            self._sonar_queued_due = None
+            self._sonar_handed_end = now + length
+
+    def _mixer_clock_slipped(self, now: float) -> bool:
+        """True when an idle channel is due to the mixer's clock: it fell
+        behind shortly before, or it ran out before the handed-over audio
+        could have played in real time."""
+        if (self._sonar_slipped_at is not None
+                and now - self._sonar_slipped_at <= self.SONAR_MIXER_SLIP_WINDOW_S):
+            return True
+        return (self._sonar_handed_end is not None
+                and now < self._sonar_handed_end - self.SONAR_MIXER_SLIP_S)
 
     def _restore_sonar_volume(self, now: float) -> None:
         """Put a stuck sonar channel volume back to its gain.
@@ -844,6 +898,7 @@ class AudioEngine:
         self.sonar_channel_idle += 1
         self._sonar_channel.play(queued, fade_ms=self.FADE_MS)
         self._sonar_fade_at = time.monotonic()
+        self._note_sonar_handover(queued, queued=False)
         return False
 
     def stop_sonar(self, *, immediate: bool = False) -> None:
@@ -922,6 +977,9 @@ class AudioEngine:
         self._sonar_stranded_candidate = None
         self._sonar_queue_busy_since = None
         self._sonar_full_since = None
+        self._sonar_handed_end = None
+        self._sonar_queued_due = None
+        self._sonar_slipped_at = None
 
     def play_voice(self, pcm: np.ndarray) -> bool:
         """One spoken clip (int16 mono at the mixer rate) on the voice channel."""
@@ -1062,7 +1120,7 @@ class AudioEngine:
                 "sonar_holds={sh} alert_drops={ad} "
                 "sonar_underruns={su} sonar_concealed={sc} sonar_neutral={sn} "
                 "sonar_stale={ss} buffer_s={bs:.2f} rate_adj={ra:+.4f} "
-                "channel_idle={ci} channel_idle_late={cl} pump_late={pl} pump_late_max_ms={pm:.0f} "
+                "channel_idle={ci} channel_idle_late={cl} channel_idle_clock={ck} pump_late={pl} pump_late_max_ms={pm:.0f} "
                 "queue_stranded={qs} worker_restarts={wr} "
                 "wedged={wg} volume_restored={vr} pump_errors={pe} full_resets={fr} "
                 "input_gaps={ig} evictions={ev} rate={r} ch={c}\n").format(
@@ -1075,7 +1133,7 @@ class AudioEngine:
             rb=produced,
             su=self.sonar_local_underruns, sn=self.sonar_neutral_blocks,
             ss=int(self.sonar_stale), bs=self._sonar_buffer_duration,
-            ci=self.sonar_channel_idle, cl=self.sonar_channel_idle_late, pl=self.sonar_pump_late, pm=late_max_ms,
+            ci=self.sonar_channel_idle, cl=self.sonar_channel_idle_late, ck=self.sonar_channel_idle_clock, pl=self.sonar_pump_late, pm=late_max_ms,
             ig=self.sonar_input_gaps,
             r=self.sample_rate, c=self.channels)
         append_bounded_log(config.SAVE_DIR, "audio_debug.log", line,

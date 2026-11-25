@@ -228,3 +228,62 @@ def test_boat_sonar_pans_against_the_boats_own_course():
     kwargs = game.audio.play_sonar.call_args.kwargs
     assert kwargs["listener_bearing_deg"] == pytest.approx(boat.sub.course)
     game.audio.shutdown()
+
+
+def _timed_sounds(monkeypatch):
+    def make(pcm):
+        sound = Mock()
+        sound.get_length.return_value = 0.25
+        return sound
+    monkeypatch.setattr(pygame.sndarray, "make_sound", Mock(side_effect=make))
+
+
+def test_a_mixer_that_catches_up_is_not_a_pump_gap(mixer, clock, monkeypatch):
+    # CI 2026-11-25: a starved SDL audio thread mixed the current and the
+    # queued block faster than real time and the channel ran dry between two
+    # on-time pump iterations.
+    _timed_sounds(monkeypatch)
+    sonar = mixer[1]
+    engine = primed_engine()                 # play() at 100.0, ends 100.25
+    sonar.get_busy.return_value = True
+    clock[0] += 0.02
+    engine._pump_sonar_once()                # queued, due 100.25, ends 100.5
+    sonar.get_busy.return_value = False
+    clock[0] += 0.1                          # 100.12: both already played
+    engine._pump_sonar_once()
+    assert engine.sonar_channel_idle == 0
+    assert engine.sonar_channel_idle_clock == 1
+
+
+def test_a_mixer_that_fell_behind_and_raced_is_not_a_pump_gap(mixer, clock, monkeypatch):
+    _timed_sounds(monkeypatch)
+    sonar = mixer[1]
+    engine = primed_engine()
+    sonar.get_busy.return_value = True
+    clock[0] += 0.02
+    engine._pump_sonar_once()                # queued, due 100.25
+    sonar.get_queue.return_value = Mock()    # still waiting at 100.4
+    clock[0] = 100.4
+    engine._pump_sonar_once()
+    sonar.get_queue.return_value = None
+    sonar.get_busy.return_value = False      # then both ran out at once
+    clock[0] = 100.6
+    engine._pump_sonar_once()
+    assert engine.sonar_channel_idle == 0
+    assert engine.sonar_channel_idle_clock == 1
+
+
+def test_a_pump_that_hands_over_too_little_still_counts_a_gap(mixer, clock, monkeypatch):
+    _timed_sounds(monkeypatch)
+    sonar = mixer[1]
+    engine = primed_engine()                 # one 0.25 s block, ends 100.25
+    sonar.get_busy.return_value = True
+    sonar.get_queue.return_value = Mock()    # a slot the pump never filled
+    clock[0] = 100.2
+    engine._pump_sonar_once()
+    sonar.get_busy.return_value = False
+    sonar.get_queue.return_value = None
+    clock[0] = 100.4                         # ran out on schedule, pump on time
+    engine._pump_sonar_once()
+    assert engine.sonar_channel_idle == 1
+    assert engine.sonar_channel_idle_clock == 0

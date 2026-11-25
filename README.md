@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.299**
+Current release: **1.3.300**
 
-Release 1.3.299 puts the real ocean under the real coasts. Every one of
+Release 1.3.300 puts the real ocean under the real coasts. Every one of
 the 128 sea areas now has its real seabed (NOAA ETOPO1, about 15 NM cells):
 shelf seas such as the North Sea or the Yellow Sea are 30-150 m deep, the
 open ocean several thousand metres, where convergence zones form. The sea

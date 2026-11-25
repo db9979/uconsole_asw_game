@@ -1521,6 +1521,11 @@ class Sub(SubCommandsMixin, FrigateRelativeMixin):
     def beyond_test_depth(self) -> bool:
         return self.depth > self.stype.max_depth_m
 
+    def settle_in(self, world) -> None:
+        """At spawn: no deeper than the water allows (a shallow real sea)."""
+        depth = min(self.depth, self.safe_depth_m(world))
+        self.depth = self.target_depth = self.order_depth = depth
+
     def safe_depth_m(self, world) -> float:
         """Deepest ordered depth: test depth, and 25 m clear of the bottom."""
         bottom = getattr(world, "depth_m", lambda x, y: 1000.0)(self.x, self.y)

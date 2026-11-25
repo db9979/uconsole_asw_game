@@ -243,6 +243,7 @@ class MissionBridgeMixin:
                          side=unit["side"], runtime_catalog=self.runtime_catalog,
                          asw_rng=self.rng_asw)
             entity.speed = float(unit.get("speed_kn", 0.0))
+            entity.settle_in(self.world)
             self.subs.append(entity)
             return entity
         if profile in self.runtime_catalog.surfaces:

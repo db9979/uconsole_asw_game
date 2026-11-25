@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.299
+
+Release 1.3.299 puts the real ocean under the real coasts. Every one of
+the 128 sea areas now has its real seabed (NOAA ETOPO1, about 15 NM cells):
+shelf seas such as the North Sea or the Yellow Sea are 30-150 m deep, the
+open ocean several thousand metres, where convergence zones form. The sea
+surface temperature and the mixed layer follow the area's real monthly
+means (World Ocean Atlas 2023), from about 5 deg C in a northern winter to
+29 deg C in the tropics; a summer sea stratifies sharply and hides a deep
+submarine. Up to three fictional shoals remain, on the shelf only. Own maps
+keep the synthetic sea. Saves are v53; v38 to v52 saves still load, and a
+saved game keeps the chart it was saved with.
+
 ## 1.3.298
 
 Release 1.3.298 lets the AI submarines hunt as a wolf pack. Two or more

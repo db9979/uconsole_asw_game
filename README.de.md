@@ -10,20 +10,19 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.298**
+Aktuelle Version: **1.3.299**
 
-Version 1.3.298 lässt die KI-U-Boote als Rudel jagen. Zwei oder mehr freie
-KI-U-Boote teilen, was sie hören: ein Rudelboot, das das Schiff hält,
-kommt hoch und meldet alle 10 statt alle 30 Minuten (das HF/DF der
-Fregatte hört jeden Ruf), und die anderen Boote nehmen die Meldung als
-grobes Datum, das sie anlaufen oder an dem sie lauern; schießen tut jedes
-nur auf seine eigene Lösung. Ein freies KI-U-Boot, das die Fregatte einen
-Torpedo ausstoßen hört, kann sofort mit einem Schnellschuss die
-Ausstoßpeilung hinunter antworten, wenn ein Rohr geflutet ist; nach einem
-Schuss abzudrehen lohnt sich also. Über 40 Gefechte KI gegen KI stieg die
-Siegquote der Fregatte von 15 % auf 22,5 %, im Rauschen. Ein Browser der Remote Crew, der seine Station abgibt, landet
-nicht mehr ab und zu wieder auf der Kopplungsseite. Spielstände sind
-v53; v38- bis v52-Spielstände laden weiterhin.
+Version 1.3.299 legt den echten Ozean unter die echten Küsten. Jedes der
+128 Seegebiete hat jetzt seinen echten Meeresboden (NOAA ETOPO1, Zellen von
+etwa 15 sm): Schelfmeere wie Nordsee oder Gelbes Meer sind 30-150 m tief,
+der offene Ozean mehrere tausend Meter, wo sich Konvergenzzonen bilden.
+Oberflächentemperatur und Deckschicht folgen den echten Monatsmitteln des
+Gebiets (World Ocean Atlas 2023), von etwa 5 Grad C im nördlichen Winter
+bis 29 Grad C in den Tropen; eine Sommersee schichtet sich scharf und
+versteckt ein tiefes U-Boot. Bis zu drei erfundene Untiefen bleiben, nur
+auf dem Schelf. Eigene Karten behalten die synthetische See. Spielstände
+sind v53; v38- bis v52-Spielstände laden weiterhin, und ein gespeichertes
+Spiel behält seine Karte.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

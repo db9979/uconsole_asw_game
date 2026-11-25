@@ -8,11 +8,15 @@ from src.core import config
 from src.physics import bioluminescence
 from src.world import atmosphere
 from src.world.coastline import Coastline
+from src.world import real_ocean
 from src.world import thunder
 from src.world.knuckles import KnuckleField
 from src.world.ocean import OceanEnvironment
 from src.world.grounding import (DEFAULT_HULL_SPEC, grounding_contact,
                                  hull_is_safe, swept_grounding)
+
+# Mean of the synthetic per-cell mixed-layer draw (uniform 40-120 m).
+SYNTHETIC_MLD_MEAN_M = 80.0
 
 
 class World:
@@ -59,7 +63,9 @@ class World:
         # Physics upgrade: time-varying ocean (tides, mixed layer, sound
         # speed, wind drift, seabed, hazards). Built from stateless seeded
         # draws, so no existing RNG sequence moves.
-        self.ocean = OceanEnvironment(seed, self.size_nm, self.charted_depth_m)
+        metadata = getattr(coast, "metadata", None) or {}
+        self.ocean = OceanEnvironment(seed, self.size_nm, self.charted_depth_m,
+                                      real_ocean.sector(metadata.get("sector_id")))
         # Bubble slicks of hard turns at speed (saved by the game, root
         # key ``knuckles``; src/world/knuckles.py).
         self.knuckles = KnuckleField()
@@ -332,6 +338,11 @@ class World:
         """Mixed-layer depth now: seasonal base, diurnal heating, wind
         mixing and internal waves; capped above the bottom."""
         base = self._cell(x_nm, y_nm, self._thermo)
+        seasonal = self.ocean.seasonal_mixed_layer_m()
+        if seasonal is not None:
+            # The real monthly layer, varied by the cell's draw (40-120 m
+            # around 80 m) as the synthetic one was.
+            base = seasonal * base / SYNTHETIC_MLD_MEAN_M
         measured = self.ocean.mixed_layer_depth_m(base, self.hour, x_nm, y_nm)
         return min(measured, max(10.0, self.depth_m(x_nm, y_nm) - 20.0))
 

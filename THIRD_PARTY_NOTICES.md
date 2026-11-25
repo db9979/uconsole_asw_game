@@ -96,12 +96,25 @@ Projektion und gleicher Zuschnitt, Douglas-Peucker-Vereinfachung mit
 Geografische, Länder- und Militärstützpunktnamen sowie die Stützpunktkoordinaten
 stammen aus diesen Quellen. Die Gameplay-Rollen `friendly`, `hostile`, `neutral`
 und `civil` werden unabhängig von realen Staaten deterministisch als fiktionale
-Übungsrollen vergeben. Bathymetrie stammt aus keiner geografischen Quelle: Sie
-wird als 17-x-17-Raster synthetisch aus Küstenabstand, trigonometrischer
-Variation und einem Sektor-Seed erzeugt. Sämtliche abgeleiteten Karten und
-Tiefen sind nicht für Navigation, Vermessung oder reale Einsatzplanung geeignet.
+Übungsrollen vergeben.
 
-Natural Earth, Wikidata, ihre Beitragenden und Rechteinhaber sind weder mit
+Seit 1.3.299 stammen Wassertiefen und Deckschicht aus
+`data/coastlines/real_ocean.json.gz` (SHA-256
+`e45f14140a16dd97fc671c1bf59d23aba262f8355e9114085243c9edfb7f61f1`, erzeugt
+von `tools/build_real_ocean.py` am 2026-11-25):
+
+| Quelle | Stand und Rechte | Verwendung |
+|---|---|---|
+| NOAA NGDC ETOPO1 | 1-Bogenminuten-Relief (Ice Surface), ERDDAP-Datensatz `etopo180`; Daten der US-Regierung, frei nutz- und weitergebbar | jeder dritte Gitterpunkt, Mittel der Wasserpunkte um jeden Punkt eines 33-x-33-Rasters je Sektor; <https://coastwatch.pfeg.noaa.gov/erddap/griddap/etopo180> |
+| NOAA NCEI World Ocean Atlas 2023 | Temperatur, 1 Grad, Monatsmittel `decav` (`woa23_decav_tMMmn01.csv.gz`); Daten der US-Regierung, frei nutz- und weitergebbar | Oberflächentemperatur (Mittel) und Deckschichttiefe (Median, 0,5 Grad C unter der Oberfläche) je Sektor und Monat; <https://www.ncei.noaa.gov/products/world-ocean-atlas> |
+
+Bis zu drei erfundene Untiefen je Sektor liegen weiterhin auf dem Schelf.
+Ohne Eintrag (eigene Karten) bleibt die synthetische 17-x-17-Bathymetrie aus
+Küstenabstand, trigonometrischer Variation und einem Sektor-Seed. Sämtliche
+abgeleiteten Karten und Tiefen sind nicht für Navigation, Vermessung oder
+reale Einsatzplanung geeignet.
+
+Natural Earth, Wikidata, NOAA, ihre Beitragenden und Rechteinhaber sind weder mit
 U-Jagd verbunden noch unterstützen, billigen oder empfehlen sie das Projekt.
 
 Für später hinzugefügte Medien gelten die Dokumentationsanforderungen in

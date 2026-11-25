@@ -160,8 +160,11 @@ def rayleigh_bottom_loss_db(sediment: str, grazing_deg: float) -> float:
 class OceanEnvironment:
     """Deterministic ocean model attached to one ``World``."""
 
-    def __init__(self, seed: int, size_nm: float, charted_depth):
+    def __init__(self, seed: int, size_nm: float, charted_depth, climate=None):
+        """``climate``: the sector's real monthly surface layer
+        (``src/world/real_ocean.py``), or None for the synthetic season."""
         self.seed = int(seed)
+        self.climate = climate
         self.size_nm = float(size_nm)
         self.clock_s = 0.0
         self.wind_mix_m = 0.0
@@ -287,11 +290,21 @@ class OceanEnvironment:
 
     # --- temperature / sound speed ------------------------------------------------
 
+    def seasonal_mixed_layer_m(self) -> float | None:
+        """The sector's real monthly mixed-layer depth today, or None."""
+        if self.climate is None:
+            return None
+        from src.world.real_ocean import monthly
+        return monthly(self.climate["mld_m"], self.day_of_year)
+
     def sea_surface_temperature_c(self, hour: float) -> float:
-        seasonal = SST_SEASONAL_AMPLITUDE_C * math.cos(
-            2.0 * math.pi * (self.day_of_year - SST_WARMEST_DAY) / 365.0)
         diurnal = SST_DIURNAL_AMPLITUDE_C * math.cos(
             2.0 * math.pi * (hour - MLD_DIURNAL_PEAK_HOUR) / 24.0)
+        if self.climate is not None:
+            from src.world.real_ocean import monthly
+            return monthly(self.climate["sst_c"], self.day_of_year) + diurnal
+        seasonal = SST_SEASONAL_AMPLITUDE_C * math.cos(
+            2.0 * math.pi * (self.day_of_year - SST_WARMEST_DAY) / 365.0)
         return SST_MEAN_C + seasonal + diurnal
 
     @staticmethod

@@ -365,6 +365,7 @@ def _new_sub(game, index: int, side: str, point, course):
               enemy_torpedo_profile=game.runtime_catalog.torpedoes[
                   game.runtime_catalog.runtime_bindings["enemy_torpedo"]],
               side=side, runtime_catalog=game.runtime_catalog, asw_rng=game.rng_asw)
+    sub.settle_in(game.world)
     game.subs.append(sub)
     return sub
 

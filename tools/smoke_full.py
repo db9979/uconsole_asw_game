@@ -91,7 +91,8 @@ def _run_smoke() -> None:
     tma_sub = next((s for s in g.subs if not s.sunk), None)
     if tma_sub is not None:
         tma_sub.x, tma_sub.y = g.ship.x + 6.0, g.ship.y
-        tma_sub.depth = 55.0
+        # 55 m, or clear of the bottom in a shallow real sea (North Sea ~40 m).
+        tma_sub.depth = min(55.0, max(10.0, g.world.depth_m(tma_sub.x, tma_sub.y) - 15.0))
         tma_sub.state = "LAUER"
         tma_sub.evac_left = 999.0
         tma_sub.speed = 0.0

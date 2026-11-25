@@ -99,3 +99,13 @@ def test_a_measuring_process_can_hold_the_synthetic_sea(monkeypatch):
     assert real_ocean.sector("real-000") is not None
     real_ocean.hold_reference_sea()
     assert real_ocean.sector("real-000") is None
+
+
+def test_a_submarine_never_spawns_under_a_shallow_real_seabed():
+    from src.core.game import Game
+
+    for seed in (1235, 1242):   # real shelf seas, 40-55 m deep at the spawn
+        game = Game(seed=seed, start_menu=False, audio_enabled=False)
+        for sub in game.subs:
+            assert sub.depth <= game.world.depth_m(sub.x, sub.y)
+            assert sub.depth == sub.target_depth == sub.order_depth

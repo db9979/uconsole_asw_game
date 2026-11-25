@@ -243,6 +243,7 @@ class ResetMixin:
                          self.runtime_catalog.runtime_bindings["enemy_torpedo"]],
                     side="hostile", runtime_catalog=self.runtime_catalog,
                     asw_rng=self.rng_asw)
+            s.settle_in(self.world)
             self.subs.append(s)
 
         # Meerestiere (M4): Falschkontakte

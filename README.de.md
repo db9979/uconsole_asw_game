@@ -10,15 +10,18 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.295**
+Aktuelle Version: **1.3.296**
 
-Version 1.3.295 macht den Start-Knopf einer eigenen Mission im Browser
-verlässlich. War die Verbindung zum Spiel genau beim Schließen der
-Missionsliste kurz veraltet, etwa weil die uConsole ausgelastet war, ging
-der Startbefehl wortlos verloren und nichts geschah. Jetzt wartet der
-Browser, bis die Verbindung wieder steht, und sendet ihn dann, oder meldet,
-dass der Befehl veraltet ist. Spielstände sind v53; v38 bis v52 laden
-weiter.
+Version 1.3.296 behebt Spielstände der U-Boot-Seite, die sich nicht laden
+ließen. Wenn ein KI-U-Boot Kurs und Fahrt eines Ziels nur aus Peilungen
+bestimmte, konnte der Feinschliff bei einer kurzen, verrauschten
+Peilreihe davonlaufen, und das U-Boot hielt seinen Kontakt für über 300 kn
+schnell. Ein Spielstand aus diesem Moment wurde beim Laden abgelehnt, was
+auch Autosave und Absturz-Wiederherstellung traf; der nächtliche
+Dauertest scheiterte deshalb seit dem 8. Oktober auf der U-Boot-Seite.
+Ein solches Ergebnis wird jetzt verworfen, und das U-Boot behält seine
+grobe, aber vernünftige Schätzung. Spielstände sind v53; v38 bis v52
+laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

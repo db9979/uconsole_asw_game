@@ -18,6 +18,9 @@ from src.sonar import tma_lm
 # (or uses Doppler); flat bearing-only minima otherwise make it wander.
 LM_ACCEPT_COST_RATIO = 0.8
 LM_MIN_MANOEUVRE = 0.5
+# A refinement that ends at an impossible target speed wandered off a flat
+# minimum (seen: 315 kn after a short, noisy track); keep the grid solution.
+LM_MAX_SPEED_KN = 45.0
 DOPPLER_OBSERVABLE_SPREAD_HZ = 0.05
 
 
@@ -268,7 +271,7 @@ def solve_tma(track: BearingTrack,
     covariance = None
     f0 = None
     refined = tma_lm.refine(pts, course, speed, pos)
-    if refined is not None and (
+    if refined is not None and 0.0 <= refined[2] <= LM_MAX_SPEED_KN and (
             refined[7] or (manoeuvre_of(refined[0]) >= LM_MIN_MANOEUVRE
                            and refined[6] < LM_ACCEPT_COST_RATIO)):
         pos, course, speed, covariance, f0, rmse = refined[:6]

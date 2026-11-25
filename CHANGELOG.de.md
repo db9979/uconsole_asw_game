@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.296
+
+Version 1.3.296 behebt Spielstände der U-Boot-Seite, die sich nicht laden
+ließen. Wenn ein KI-U-Boot Kurs und Fahrt eines Ziels nur aus Peilungen
+bestimmte, konnte der Feinschliff bei einer kurzen, verrauschten
+Peilreihe davonlaufen, und das U-Boot hielt seinen Kontakt für über 300 kn
+schnell. Ein Spielstand aus diesem Moment wurde beim Laden abgelehnt, was
+auch Autosave und Absturz-Wiederherstellung traf; der nächtliche
+Dauertest scheiterte deshalb seit dem 8. Oktober auf der U-Boot-Seite.
+Ein solches Ergebnis wird jetzt verworfen, und das U-Boot behält seine
+grobe, aber vernünftige Schätzung. Spielstände sind v53; v38 bis v52
+laden weiter.
+
 ## 1.3.295
 
 Version 1.3.295 macht den Start-Knopf einer eigenen Mission im Browser

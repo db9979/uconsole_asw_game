@@ -67,6 +67,23 @@ def test_lm_tma_reports_covariance_ellipse_and_fits_truth():
     assert error < 2.0
 
 
+def test_lm_refinement_at_an_impossible_speed_keeps_the_grid_solution(monkeypatch):
+    # Nightly soak #229: a refinement that wandered off a flat minimum handed
+    # the AI submarine a remembered contact at 315 kn, which the save
+    # validator then refused.  Such a result must fall back to the grid fit.
+    track, _ = _track()
+    real_refine = tma_lm.refine
+
+    def runaway(points, course, speed, pos):
+        result = real_refine(points, course, speed, pos)
+        return (result[0], result[1], 315.0) + tuple(result[3:])
+
+    monkeypatch.setattr(tma_lm, "refine", runaway)
+    solution = solve_tma(track)
+    assert solution is not None
+    assert solution.speed <= 45.0
+
+
 def test_doppler_makes_range_observable_without_manoeuvre():
     bearing_only, _ = _track(manoeuvre=False, doppler=False,
                              start=(4.0, -4.0), course=270.0, speed=12.0)

@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.296
+
+Release 1.3.296 fixes saves of the submarine side that would not load.
+When an AI submarine worked out a target's course and speed from bearings
+alone, the fine-tuning step could run away on a short, noisy track and
+leave it believing its contact made over 300 kn. A save taken then was
+refused on loading, which also broke autosave and crash recovery; the
+nightly soak test had failed on the submarine side since 8 October. Such a
+result is now discarded and the submarine keeps its rough but sane
+estimate. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.295
 
 Release 1.3.295 makes the Start button of an own mission in the browser

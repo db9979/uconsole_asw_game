@@ -4,6 +4,10 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.300
+
+Die Audio-Dauerprüfung unterscheidet einen einzelnen Mixer-Hänger auf einem ausgelasteten Testrechner (eine hängende Warteschlange oder ein festgefahrener Kanal, den die Sonarpumpe wieder anstößt) von einer echten Lücke und nennt den Zeitpunkt einer gezählten Lücke. Am Spiel selbst ändert sich nichts. Diese Version bringt auch 1.3.299 (der echte Ozean, unten), die nicht einzeln erschien.
+
 ## 1.3.299
 
 Version 1.3.299 legt den echten Ozean unter die echten Küsten. Jedes der

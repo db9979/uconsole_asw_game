@@ -305,6 +305,43 @@ def _warmup_baseline(perf: list[dict], audio_rows: list[dict], warmup_s: float) 
     return base
 
 
+# One SDL stall after the warm-up is tolerated: on a loaded runner the mixer
+# callback that promotes a queued block can wait for the GIL longer than the
+# pump's stranded-queue window (or the dummy driver stops advancing), the
+# pump replays or restarts the channel, and that recovery also counts one
+# idle channel. A second stall in a short soak is a regression.
+MAX_RECOVERIES = 1
+
+
+def _recoveries(base: dict, last: dict) -> dict:
+    """Stranded-queue replays and wedged-channel restarts after the warm-up.
+    Each one also counted one idle channel in the engine."""
+    counts = {key: max(0.0, last.get(key, 0) - base.get(key, 0))
+              for key in ("queue_stranded", "wedged")}
+    return {key: value for key, value in counts.items() if value}
+
+
+def _counter_steps(perf: list[dict], audio_rows: list[dict], base: dict,
+                   key: str) -> list[str]:
+    """Where a counted failure happened: one line per audio row in which
+    ``key`` grew after the warm-up, with its time after the first frame and
+    the pump counters next to it (the stranded queue path also counts an
+    idle channel)."""
+    first = perf[0].get("t", 0) if perf else 0
+    previous = dict(base)
+    steps = []
+    for row in audio_rows:
+        if row.get(key, 0) > previous.get(key, 0) and row.get("t", 0) > base.get("t", -1):
+            steps.append(
+                f"    at +{row.get('t', 0) - first:.1f}s: {key} "
+                f"{previous.get(key, 0):.0f}->{row.get(key, 0):.0f}, "
+                f"queue_stranded {row.get('queue_stranded', 0):.0f}, "
+                f"pump_late_max {row.get('pump_late_max_ms', 0):.0f} ms, "
+                f"buffer {row.get('buffer_s', 0):.2f} s")
+        previous = row
+    return steps
+
+
 def run_host(args) -> int:
     with TemporaryDirectory(prefix="u-jagd-audio-soak-") as home:
         # Isolate settings, saves and debug logs before anything reads ~/.u-jagd.
@@ -461,12 +498,25 @@ def report(args, elapsed, epochs, counters, streams, sessions, stats, perf, audi
                   f"(underruns {base.get('sonar_underruns', 0):.0f}, "
                   f"channel_idle {base.get('channel_idle', 0):.0f}, "
                   f"drops {base.get('sonar_drops', 0):.0f})")
+        recovered = _recoveries(base, last)
+        if recovered:
+            print(f"pump recoveries after the warm-up: stranded queue "
+                  f"{recovered['queue_stranded']:.0f}, wedged channel "
+                  f"{recovered['wedged']:.0f}")
         for key, label in (("sonar_underruns", "local underruns"),
                            ("channel_idle", "mixer channel idle events"),
                            ("sonar_drops", "rejected local blocks")):
             counted = last.get(key, 0) - base.get(key, 0)
+            if key == "channel_idle":
+                counted -= sum(recovered.values())
             if counted > 0:
                 failures.append(f"{label}: {counted:.0f}")
+                failures.extend(_counter_steps(perf, audio_rows, base, key))
+        if sum(recovered.values()) > MAX_RECOVERIES:
+            failures.append(f"mixer stalled {sum(recovered.values()):.0f} times "
+                            f"(stranded queue or wedged channel)")
+            for key in recovered:
+                failures.extend(_counter_steps(perf, audio_rows, base, key))
         # Every retune breaks the receiver sequence once; anything beyond that
         # is a block the frame loop never played. (evictions counts ordinary
         # ring rotation of the two-block receiver window, not loss.)

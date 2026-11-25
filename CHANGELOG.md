@@ -4,6 +4,10 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.300
+
+The audio soak check tells a single mixer stall on a busy test machine (a stranded queue or a wedged channel that the sonar pump recovers) apart from a real gap, and says when a counted gap happened. The game itself is unchanged. This release also brings 1.3.299 (the real ocean, below), which did not ship on its own.
+
 ## 1.3.299
 
 Release 1.3.299 puts the real ocean under the real coasts. Every one of

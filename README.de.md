@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.299**
+Aktuelle Version: **1.3.300**
 
-Version 1.3.299 legt den echten Ozean unter die echten Küsten. Jedes der
+Version 1.3.300 legt den echten Ozean unter die echten Küsten. Jedes der
 128 Seegebiete hat jetzt seinen echten Meeresboden (NOAA ETOPO1, Zellen von
 etwa 15 sm): Schelfmeere wie Nordsee oder Gelbes Meer sind 30-150 m tief,
 der offene Ozean mehrere tausend Meter, wo sich Konvergenzzonen bilden.
@@ -23,6 +23,7 @@ versteckt ein tiefes U-Boot. Bis zu drei erfundene Untiefen bleiben, nur
 auf dem Schelf. Eigene Karten behalten die synthetische See. Spielstände
 sind v53; v38- bis v52-Spielstände laden weiterhin, und ein gespeichertes
 Spiel behält seine Karte.
+(1.3.299 erschien nicht einzeln; 1.3.300 bringt dazu einen stabileren Audiotest.)
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

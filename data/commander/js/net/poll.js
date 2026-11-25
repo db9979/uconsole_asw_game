@@ -23,6 +23,20 @@ async function pollRoleFeeds(state, context) {
   emit("proposals");
   useEvents(nextEvents, state);
 }
+// A 403 on a role feed while the session itself is still valid means only
+// that this browser no longer holds the station it polled for (another
+// request in the lane handed it over); take the fresh session instead of
+// logging out.
+async function stationLost(context) {
+  try {
+    const metadata = await request("/session");
+    if (context !== S.generation) return true;
+    emit("session:metadata", metadata);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 export async function poll() {
   if (!authenticated() || S.polling) return;
   S.polling = true;
@@ -161,7 +175,13 @@ export async function poll() {
   } catch (error) {
     if (context !== S.generation) return;
     console.error("Commander poll failed", error);
-    if (error.status === 401 || error.status === 403) {
+    if (error.status === 401) {
+      forgetSession("connection_expired");
+    } else if (error.status === 403 && await stationLost(context)) {
+      // The station went elsewhere mid-poll (handed over, revoked): the
+      // session lives on in the lobby, so poll again at once.
+      delay = 0;
+    } else if (error.status === 403) {
       forgetSession("connection_expired");
     } else {
       S.failures += 1;

@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.298
+
+Version 1.3.298 lässt die KI-U-Boote als Rudel jagen. Zwei oder mehr freie
+KI-U-Boote teilen, was sie hören: ein Rudelboot, das das Schiff hält,
+kommt hoch und meldet alle 10 statt alle 30 Minuten (das HF/DF der
+Fregatte hört jeden Ruf), und die anderen Boote nehmen die Meldung als
+grobes Datum, das sie anlaufen oder an dem sie lauern; schießen tut jedes
+nur auf seine eigene Lösung. Ein freies KI-U-Boot, das die Fregatte einen
+Torpedo ausstoßen hört, kann sofort mit einem Schnellschuss die
+Ausstoßpeilung hinunter antworten, wenn ein Rohr geflutet ist; nach einem
+Schuss abzudrehen lohnt sich also. Über 40 Gefechte KI gegen KI stieg die
+Siegquote der Fregatte von 15 % auf 22,5 %, im Rauschen. Ein Browser der Remote Crew, der seine Station abgibt, landet
+nicht mehr ab und zu wieder auf der Kopplungsseite. Spielstände sind
+v53; v38- bis v52-Spielstände laden weiterhin.
+
 ## 1.3.297
 
 Version 1.3.297 gibt der Besatzung eigene Stimmen. Sind gesprochene

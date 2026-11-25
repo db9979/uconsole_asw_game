@@ -35,6 +35,7 @@ from __future__ import annotations
 import math
 
 from src.core import boat_missions, boat_radio, config, detrand, opfor_plans
+from src.enemies import wolfpack
 from src.physics import bioluminescence
 from src.llm import opponent
 from src.core.i18n import message
@@ -324,7 +325,8 @@ def steer(game) -> None:
     for sub in game.subs:
         sub.mission_orders = orders(game, sub) if sub is mission_boat else None
         sub.plan_orders = (None if sub is mission_boat or sub.side != "hostile" or sub.manual
-                           else opponent.sub_orders(game, sub, plan or opfor_plans.sub_plan(sub, habits)))
+                           else wolfpack.rising_orders(game, sub)
+                           or opponent.sub_orders(game, sub, plan or opfor_plans.sub_plan(sub, habits)))
         sub.mission_guarded = guarded and sub is mission_boat
         sub.mission_snap = snap and sub is mission_boat
         # Scenario 13 is peacetime: no AI boat fires.

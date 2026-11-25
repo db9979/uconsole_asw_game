@@ -96,6 +96,8 @@ Submarine physics: the hull accelerates toward an ordered speed (no instant spri
 
 Submarines sense like you do: passive bearings from their own sonar, a range only after their own TMA legs (a few minutes), and a shot on that TMA only once its range error has converged (the difficulty field "enemy fire-control convergence": sigma over range at or below 0.25 in the patrol scenarios, 0.15 for the SSN; a solution older than 90 s or re-opened by your course change is not fired on), ESM only with the mast up, the datalink only at mast depth or snorkelling, and a torpedo alarm takes the crew a few seconds (2-15 s) before the submarine evades.
 
+**Wolf pack and snap shot:** two or more free AI submarines hunt as a pack. A pack boat that has held the ship within the last 2 minutes comes up to periscope depth at 4 kn about 2.5 minutes before its reporting slot and reports every 10 minutes instead of every 30 (the frigate's HF/DF hears each 20 s call). When the call ends, every other pack boat without a contact of its own younger than 90 s takes the report as a coarse datum (dead-reckoned to the moment, at least 2 NM uncertain and remembered as if heard 2 minutes earlier) and closes it or lies in wait by its commander's plan; it fires only on its own converged solution. A free AI submarine that hears the frigate launch a torpedo from its tubes may answer at once with a snap shot down the launch bearing, if a tube is flooded (chance 50 % times its commander's aggression): the range comes only from the loudness of the transient (about ±35 %), the seeker does the rest. Turning away after a launch pays.
+
 Surface ships lose top speed in heavy seas (small ships more).
 
 ## Enemy commanders {#ref-commanders}

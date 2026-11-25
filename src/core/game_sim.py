@@ -16,6 +16,7 @@ import pygame
 from src.audio.preview import unit_sonar_preview
 from src.audio.synthesis import bearing_pan
 from src.core import config
+from src.enemies import wolfpack
 from src.physics import bioluminescence
 from src.world import thunder
 from src.core import buoy_antenna, detrand, shock, torpedo_seeker
@@ -637,6 +638,8 @@ class SimMixin:
             if sub.sunk and sub.side == "hostile" and self.roe != "FREE":
                 self.roe = "FREE"
                 self.hq_msg(message("runtime.roe_free_confirmed"))
+        # A pack boat's report that just ended reaches the other boats.
+        wolfpack.share(self, dt)
         for animal in self.animals:
             animal.update(dt, self.world)
         if traffic.due(self.sim_t, dt):

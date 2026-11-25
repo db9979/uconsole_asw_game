@@ -21,7 +21,7 @@ fairness measurement before and after.
 | Own-ship hydrodynamics | Hard turns cost no speed. | planned (T4), with a calibration deviation |
 | Detection threshold | Contacts appear and vanish at a hard detection edge; there is no fading in and out near the limit. | planned (T5, stateless via `detrand`) |
 | Sonar environment | No flow noise for the active sonar, no snapping shrimp in warm shallow water. | later |
-| AI tactics | No counter-fire down the bearing of a heard launch transient; AI submarines do not attack the consort destroyer on purpose (their torpedoes can still sink it). | later |
+| AI tactics | AI submarines do not attack the consort destroyer on purpose (their torpedoes can still sink it); a pack shares contacts only through the submarines' HF reports, with no coordinated attack timing. | later |
 | Hostile submarine damage | AI submarines keep one lumped damage value (noise, top speed, progressive flooding, emergency blow, hull fatigue); only the crewed submarine has compartments (below). | by design |
 | Crewed submarine damage control | Six compartments and two teams; no separate pressure and outer hull, no smoke or heat spreading, no oxygen-consuming fires. | manual chapter 12 |
 | Frigate damage control | Counter-flooding only between the two hull sides; the wounded are counted per station and never die. | manual chapter 6 |

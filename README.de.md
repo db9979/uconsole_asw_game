@@ -10,18 +10,19 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.297**
+Aktuelle Version: **1.3.298**
 
-Version 1.3.297 gibt der Besatzung eigene Stimmen. Sind gesprochene
-Logmeldungen an, spricht jede Station mit eigener Stimme aus der Familie
-der gewählten Stimme (Sonar, Funk, OPZ, Waffen, Navigation, Schadensabwehr,
-Ausguck), die Besatzung klingt durch die Bordsprechanlage und der
-Funkraum durch einen rauschenden Funkkanal; beides lässt sich in den
-Sprachmodell-Einstellungen (Seite 3) abschalten. Auch ein Browser der
-Remote Crew kann jetzt die Logmeldungen vorlesen: das Kästchen
-"Logmeldungen vorlesen (Stimme des Hosts)" in seiner Kopfzeile spielt die
-Sprachclips des Hosts für seine Seite. Spielstände sind v53; v38- bis
-v52-Spielstände laden weiterhin.
+Version 1.3.298 lässt die KI-U-Boote als Rudel jagen. Zwei oder mehr freie
+KI-U-Boote teilen, was sie hören: ein Rudelboot, das das Schiff hält,
+kommt hoch und meldet alle 10 statt alle 30 Minuten (das HF/DF der
+Fregatte hört jeden Ruf), und die anderen Boote nehmen die Meldung als
+grobes Datum, das sie anlaufen oder an dem sie lauern; schießen tut jedes
+nur auf seine eigene Lösung. Ein freies KI-U-Boot, das die Fregatte einen
+Torpedo ausstoßen hört, kann sofort mit einem Schnellschuss die
+Ausstoßpeilung hinunter antworten, wenn ein Rohr geflutet ist; nach einem
+Schuss abzudrehen lohnt sich also. Über 40 Gefechte KI gegen KI stieg die
+Siegquote der Fregatte von 15 % auf 22,5 %, im Rauschen. Spielstände sind
+v53; v38- bis v52-Spielstände laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

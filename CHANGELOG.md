@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.298
+
+Release 1.3.298 lets the AI submarines hunt as a wolf pack. Two or more
+free AI submarines share what they hear: a pack boat that holds the ship
+comes up and reports every 10 minutes instead of every 30 (the frigate's
+HF/DF hears each call), and the other boats take the report as a coarse
+datum to close or to lie in wait on; each still fires only on its own
+solution. A free AI submarine that hears the frigate launch a torpedo may
+answer at once with a snap shot down the launch bearing if a tube is
+flooded, so turning away after a shot pays. Measured over 40 AI-against-AI
+battles the frigate's win rate moved from 15 % to 22.5 %, within the
+noise. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.297
 
 Release 1.3.297 gives the crew distinct voices. With spoken log messages

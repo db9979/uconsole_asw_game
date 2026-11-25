@@ -561,13 +561,25 @@ async function run() {
   }
   assert(protocolErrors.length === 0 && consoleErrors.length === 0,
     `caught JS failures: ${[...protocolErrors, ...consoleErrors].join("\n---\n")}; events=${events.join(",")}`);
-  const stateAndCharts = events.filter((entry) => entry === "chart" || entry.startsWith("state:"));
+  // A role's tenure: from its first state until the session moves on. A push
+  // of the previous role still in flight on the socket may land inside it
+  // after a /state fetch already answered for the new role; the client drops
+  // it, so only this role's states and the charts count here.
+  const tenure = (role) => {
+    const start = events.indexOf(`state:${role}`);
+    if (start < 0) return [];
+    let end = events.findIndex((entry, index) => index > start &&
+      entry.startsWith("session:") && entry !== `session:${role}`);
+    if (end < 0) end = events.length;
+    return events.slice(start, end).filter((entry) => entry === "chart" || entry === `state:${role}`);
+  };
   for (const role of ["bridge", "sonar", "opz", "eloka", "engine", "damage", "radio", "helicopter", "weapons"]) {
     assert(rendered.has(role), `role not rendered: ${role}; opz=${opzDiagnostic}; actions=${stationActions.join(",")}; events=${events.join(",")}`);
     assert(visualRendered.has(role), `role visualization missing: ${role}`);
     assert(layoutChecked.has(role), `role layout unchecked: ${role}`);
-    assert(stateAndCharts.some((entry, index) => entry === `state:${role}` &&
-      stateAndCharts[index + 1] === "chart" && stateAndCharts[index + 2] === `state:${role}`),
+    const own = tenure(role);
+    assert(own.some((entry, index) => entry === `state:${role}` &&
+      own[index + 1] === "chart" && own[index + 2] === `state:${role}`),
       `missing chart sandwich: ${role}; events=${events.join(",")}`);
   }
   assert(events.includes("state:null"), `unpublished/redacted state was not exercised: ${events.join(",")}`);

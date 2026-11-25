@@ -9,6 +9,7 @@ import math
 
 
 from src.core import buoy_antenna, config
+from src.enemies import wolfpack
 from src.core import detrand
 from src.core.i18n import message
 from src.sensors import radar as radar_physics
@@ -452,7 +453,7 @@ class RadarPictureMixin:
             return
         night = self.world.is_night()
         for sub in self.subs:
-            if not (sub.transmitting or sub.contact_report_on_air(self.seed, self.sim_t)):
+            if not (sub.transmitting or wolfpack.report_on_air(self, sub, self.sim_t)):
                 continue
             dist = sub.distance_nm(self.ship)
             seed = getattr(sub, "sensor_seed", sub.id)

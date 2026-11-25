@@ -12,6 +12,7 @@ from src.core.i18n import display_value, message, raw_text
 from src.physics import torpedo_dyn
 from src.core.station import Station
 from src.core.limits import MAX_DECOYS
+from src.enemies import wolfpack
 from src.enemies.decoy import Decoy
 from src.air.asm import ESSM
 from src.air import chaff as chaff_physics
@@ -693,6 +694,8 @@ class WeaponOrdersMixin:
                         self.ship.x, self.ship.y, 5.0,
                         sub.x, sub.y, sub.depth)):
                 sub.alert_torpedo(source=(self.ship.x, self.ship.y))
+                # A boat with a flooded tube may answer down the bearing.
+                wolfpack.snap_shot(self, sub, (self.ship.x, self.ship.y), self.torpedo_seq)
         for warship in self.warships:
             if (not warship.sunk and warship.doctrine == "surface_combatant"
                     and math.hypot(self.ship.x - warship.x, self.ship.y - warship.y)

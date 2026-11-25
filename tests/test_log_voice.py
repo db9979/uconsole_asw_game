@@ -264,7 +264,7 @@ def test_a_burst_is_read_in_order_one_by_one_and_counts_all():
     game.configure_voice()
     queued = []
 
-    def say(text, role):
+    def say(text, role, group=None):
         queued.append(text)
         game._voice_queue.append(voice.VoiceRequest(role, text, "en"))
         return True
@@ -391,7 +391,7 @@ def test_a_report_sent_to_the_service_ends_with_a_full_stop():
                                            tts_url="http://127.0.0.1:9/v1", tts_model="tts")
     game.configure_voice()
     sent = []
-    game.voice.say = lambda text, language, role: sent.append(text) or voice.VoiceRequest(
+    game.voice.say = lambda text, language, role, **_kw: sent.append(text) or voice.VoiceRequest(
         role, text, language)
     assert game.voice_say("Contact K1 bearing 270", "crew")
     assert sent[-1].endswith(".") and not sent[-1].endswith("..")

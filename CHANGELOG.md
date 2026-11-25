@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.297
+
+Release 1.3.297 gives the crew distinct voices. With spoken log messages
+on, each station speaks with its own voice from the family of the chosen
+voice (sonar, radio, operations, weapons, navigation, damage control,
+lookout), the crew sounds through the intercom and the radio room through
+a squelchy radio channel; both switch off in the language model settings
+(page 3). A browser of the Remote Crew can now read the log messages aloud
+too: the "Read the log aloud (the host's voice)" checkbox in its header plays the
+host's voice clips for its side. Saves are v53; v38 to v52 saves still
+load.
+
 ## 1.3.296
 
 Release 1.3.296 fixes saves of the submarine side that would not load.

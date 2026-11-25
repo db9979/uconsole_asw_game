@@ -10,16 +10,17 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.296**
+Current release: **1.3.297**
 
-Release 1.3.296 fixes saves of the submarine side that would not load.
-When an AI submarine worked out a target's course and speed from bearings
-alone, the fine-tuning step could run away on a short, noisy track and
-leave it believing its contact made over 300 kn. A save taken then was
-refused on loading, which also broke autosave and crash recovery; the
-nightly soak test had failed on the submarine side since 8 October. Such a
-result is now discarded and the submarine keeps its rough but sane
-estimate. Saves are v53; v38 to v52 saves still load.
+Release 1.3.297 gives the crew distinct voices. With spoken log messages
+on, each station speaks with its own voice from the family of the chosen
+voice (sonar, radio, operations, weapons, navigation, damage control,
+lookout), the crew sounds through the intercom and the radio room through
+a squelchy radio channel; both switch off in the language model settings
+(page 3). A browser of the Remote Crew can now read the log messages aloud
+too: the "Read the log aloud (the host's voice)" checkbox in its header plays the
+host's voice clips for its side. Saves are v53; v38 to v52 saves still
+load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

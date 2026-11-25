@@ -1832,7 +1832,7 @@ class PicturesMixin:
                 text = callouts.spoken_text(row, self.tr)
                 # The natural voice of the speech service when it is set up,
                 # else (and when it fails) espeak-ng.
-                if not self.voice_say(text, "crew"):
+                if not self.voice_say(text, "crew", callouts.group_of(row["key"])):
                     self.speaker.say(text, self.preferences.language)
         self.speaker.pump()
         self._pump_voice()

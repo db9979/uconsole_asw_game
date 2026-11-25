@@ -97,6 +97,29 @@ _WITH_BEARING = frozenset({"torpedo", "contact", "breakup", "ping", "dipping", "
                            "splash", "detonation_near", "detonation", "sighting_warship",
                            "sighting_merchant", "sighting_aircraft", "sighting_torpedo",
                            "sighting_unknown", "bridge_aircraft"} | {key for key in KEYS if key.startswith("lookout_")})
+# The station of the log that makes each call (``config.LOG_VOICE_GROUPS``):
+# it speaks with that station's voice (``src/llm/voice.py: station_voice``).
+_GROUP = {"torpedo": "sonar", "contact": "sonar", "breakup": "sonar", "ping": "sonar",
+          "dipping": "sonar", "buoy_ping": "sonar", "splash": "sonar",
+          "detonation_near": "sonar", "detonation": "sonar",
+          "torpedo_away": "waffen", "hit": "schaden", "leak": "schaden", "fire": "schaden",
+          "hull_damage": "schaden", "test_depth_near": "navigation",
+          "test_depth_over": "navigation", "crash_dive": "navigation", "evade": "navigation",
+          "mast_threat": "funk", "broadcast": "funk", "broadcast_report": "funk",
+          "task": "funk", "mpa_on_station": "opz", "bridge_aircraft": "ausguck",
+          "won": "mission", "lost": "mission"}
+
+
+def group_of(key) -> str | None:
+    """The station of the log a callout key belongs to, or None (the
+    officer's own voice: action stations)."""
+    if type(key) is not str:
+        return None
+    if key.startswith(("sighting_", "lookout_")):
+        return "ausguck"
+    return _GROUP.get(key)
+
+
 SIDES = ("frigate", "boat")
 
 

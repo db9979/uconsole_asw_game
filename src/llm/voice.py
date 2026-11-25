@@ -28,11 +28,13 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zlib
 from collections import OrderedDict, deque
 from dataclasses import dataclass, field
 
 import numpy as np
 
+from src.audio import voice_colour
 from src.core import https
 from src.llm.client import clean_text, valid_model, valid_url
 
@@ -44,6 +46,15 @@ DEFAULT_VOICE = "onyx"
 PRESET_VOICES = ("alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx",
                  "sage", "shimmer", "verse")
 MAX_VOICE_LEN = 64
+# The voices of Qwen3-TTS CustomVoice servers, in the order the stations
+# take them (native English speakers first: they carry German best).
+QWEN_VOICES = ("aiden", "ryan", "eric", "dylan", "serena", "vivian", "uncle_fu",
+               "ono_anna", "sohee")
+VOICE_FAMILIES = (QWEN_VOICES, PRESET_VOICES)
+# The stations of the log that speak with a voice of their own, in the order
+# they take the family's other voices (``station_voice``).  The officer,
+# the mission's and the world's entries keep the chosen voice.
+STATION_VOICE_ORDER = ("sonar", "funk", "opz", "waffen", "navigation", "schaden", "ausguck")
 # Sampling of speech models that take it (Qwen-TTS and similar servers):
 # lower temperature = calmer, steadier; lower top_p = fewer outliers; a
 # fixed seed keeps the delivery alike across sentences (-1 = random: one
@@ -103,6 +114,20 @@ _STYLE = {
 # a sentence may come out in another language or accent).
 _LANGUAGE_NAME = {"de": "German", "en": "English"}
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def station_voice(main: str, group) -> str:
+    """The voice a station of the log speaks with: another voice of the
+    chosen voice's family (Qwen or OpenAI), the same one for every launch;
+    the chosen voice itself for the officer, the mission and the world, and
+    for a voice of no known family (a server with its own names)."""
+    if group not in STATION_VOICE_ORDER:
+        return main
+    family = next((family for family in VOICE_FAMILIES if main in family), None)
+    if family is None:
+        return main
+    others = [voice for voice in family if voice != main]
+    return others[STATION_VOICE_ORDER.index(group) % len(others)]
 
 
 def valid_voice(voice) -> bool:
@@ -334,10 +359,15 @@ class VoiceConfig:
 class VoiceRequest:
     """One sentence to say; the worker fills ``status``/``pcm``/``error``."""
 
-    def __init__(self, role: str, text: str, language: str):
+    def __init__(self, role: str, text: str, language: str, voice: str | None = None,
+                 colour: str = ""):
         self.role = role
         self.text = text
         self.language = language
+        # Another voice than the configured one (a station's own), and how
+        # the report sounds on its way (``src/audio/voice_colour.py``).
+        self.voice = voice
+        self.colour = colour if colour in voice_colour.COLOURS else ""
         self.created = time.monotonic()
         self.status = "pending"
         self.pcm = None            # int16 mono at the mixer's rate, once done
@@ -630,15 +660,21 @@ class VoiceService:
 
     # -- requests ------------------------------------------------------------
 
-    def say(self, text, language: str, role: str = "xo"):
+    def say(self, text, language: str, role: str = "xo", *, voice: str | None = None,
+            colour: str = ""):
         """Queue one sentence; ``None`` when off, empty or the queue is full
-        (a full crew or log queue drops its oldest report instead)."""
+        (a full crew or log queue drops its oldest report instead).
+        ``voice`` speaks it with another voice than the configured one,
+        ``colour`` sends it over the internal or the radio net."""
         if not self.active or role not in ROLES:
             return None
         text = speakable(text, clean=self._config.clean)
         if not text:
             return None
-        request = VoiceRequest(role, text, language if language in _STYLE else "en")
+        if voice is not None and not valid_voice(voice):
+            voice = None
+        request = VoiceRequest(role, text, language if language in _STYLE else "en",
+                               voice, colour)
         with self._lock:
             pending = self._queues[role]
             if len(pending) >= self._queue_max:
@@ -699,7 +735,8 @@ class VoiceService:
                 continue
             request.status = "running"
             started = time.monotonic()
-            key = (request.role, request.language, request.text)
+            key = (request.role, request.language, request.text, request.voice,
+                   request.colour)
             with self._lock:
                 pcm = self._cache.get(key)
                 if pcm is not None:
@@ -742,6 +779,8 @@ class VoiceService:
         """Send one request and pass its audio on in pieces as it arrives."""
         state = {}
         piece = max(1, int(self._rate * PIECE_S))
+        colour = voice_colour.VoiceColour(request.colour, self._rate,
+                                          seed=zlib.crc32(request.text.encode("utf-8")))
 
         def block(data: bytes) -> None:
             if "wav" not in state:
@@ -752,7 +791,7 @@ class VoiceService:
                 return
             if "resample" not in state:
                 state["resample"] = Resampler(wav.rate, self._rate)
-            out = state["resample"].feed(samples)
+            out = colour.feed(state["resample"].feed(samples))
             if state["first"] and len(out):
                 # 8 ms fade-in: no click at the start.
                 fade = min(len(out), max(1, self._rate // 125))
@@ -767,6 +806,8 @@ class VoiceService:
         if "wav" not in state:
             raise ValueError("empty audio")
         state["wav"].close()
+        if colour.active:
+            state["out"].append(colour.tail())
         self._hand_on(request, state, started)
 
     @staticmethod
@@ -778,7 +819,8 @@ class VoiceService:
     # -- transport -----------------------------------------------------------
 
     def _post(self, config: VoiceConfig, request: VoiceRequest, sink) -> None:
-        body = {"model": config.model, "input": request.text, "voice": config.voice,
+        body = {"model": config.model, "input": request.text,
+                "voice": request.voice or config.voice,
                 "response_format": "wav"}
         if self._instructions:
             body["instructions"] = _STYLE[request.language]

@@ -268,6 +268,8 @@ def _voice_values(game) -> dict:
         "tts_seed": message("voice.seed_random") if prefs.tts_seed < 0
         else raw_text(str(prefs.tts_seed)),
         "tts_clean": _on_off(prefs.tts_clean),
+        "tts_station_voices": _on_off(prefs.tts_station_voices),
+        "tts_intercom": _on_off(prefs.tts_intercom),
     }
 
 
@@ -284,7 +286,12 @@ def _log_help(game, name):
     """Under a station's row: how many entries it logged lately."""
     if name == "tts_log":
         return "voice.help.tts_log"
-    return message("voice.log.count", count=game.log_voice_count(name[len("tts_log_"):]))
+    group = name[len("tts_log_"):]
+    count = game.log_voice_count(group)
+    if game.preferences.tts_station_voices:
+        return message("voice.log.count_voice", count=count,
+                       voice=raw_text(game.station_voice_of(group)))
+    return message("voice.log.count", count=count)
 
 
 @localized

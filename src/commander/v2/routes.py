@@ -28,6 +28,8 @@ from src.commander.v2.commands import (
 from src.commander.missions import MISSION_UPLOAD_MAX_BYTES
 from src.commander.advisor_web import VOICE_ROUTE as ADVISOR_VOICE_ROUTE
 from src.commander.advisor_web import SPEECH_MAX_BYTES, SPEECH_ROUTE
+from src.commander.log_voice_web import (LOG_VOICE_CLIP_ROUTE, LOG_VOICE_PROBE_ROUTE,
+                                          LOG_VOICE_ROUTE)
 from src.commander.v2.wire import (
     station_grants,
     AUDIO_SOCKET_TIMEOUT_S,
@@ -1064,6 +1066,29 @@ class _Handler(BaseHTTPRequestHandler):
             secure = owner.tls_address
             self._reply(200, {"protocol": 2,
                               "port": None if secure is None else int(secure[1])})
+        elif self.path in (LOG_VOICE_ROUTE, LOG_VOICE_PROBE_ROUTE) or self.path.startswith(
+                LOG_VOICE_CLIP_ROUTE):
+            # The own side's log read aloud: the index, or one clip.
+            try:
+                with owner._lock:
+                    session, _, presented = self._authenticated_v2_locked(renew=True)
+                    found = None
+                    if session is not None:
+                        found = (owner.log_voice_clip_locked(session, self.path)
+                                 if self.path.startswith(LOG_VOICE_CLIP_ROUTE)
+                                 else owner.log_voice_index_locked(
+                                     session, self.path == LOG_VOICE_PROBE_ROUTE))
+            except (UnicodeEncodeError, ValueError):
+                self.send_error(400)
+                return
+            if session is None:
+                self._v2_unauthorized(presented)
+            elif found is None:
+                self.send_error(404)
+            elif not self.path.startswith(LOG_VOICE_CLIP_ROUTE):
+                self._reply(200, found)
+            else:
+                self._voice_reply(*found)
         elif self.path.startswith(ADVISOR_VOICE_ROUTE):
             # The executive officer's spoken answer, for its asker only.
             try:

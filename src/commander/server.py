@@ -27,6 +27,7 @@ from src.core.config import SHIP_SPEED_MAX_KN
 from src.commander.missions import MissionLibraryServerMixin
 from src.commander.server_mode import SERVER_REASONS, ServerModeServerMixin
 from src.commander.advisor_web import AdvisorServerMixin
+from src.commander.log_voice_web import LogVoiceServerMixin
 from src.commander.audio_streams import AudioStreamServerMixin
 from src.commander.station_leases import StationLeaseServerMixin
 from src.commander.v2.wire import (DEBRIEF_MAX_BYTES, station_grants, _log,
@@ -117,7 +118,7 @@ def web_catalog(catalog) -> dict:
 
 
 class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
-                      MissionLibraryServerMixin, AdvisorServerMixin,
+                      MissionLibraryServerMixin, AdvisorServerMixin, LogVoiceServerMixin,
                       ServerModeServerMixin):
     """Thread-safe v2 publications and leased commands, with explicit lifecycle.
 
@@ -214,6 +215,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._init_missions()
         self._init_advisor()
+        self._init_log_voice()
         self._init_server_mode()
         self._v2_events = {}
         self._v2_private_events = {}
@@ -460,6 +462,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._clear_missions_locked()
         self._clear_advisor_locked()
+        self._clear_log_voice_locked()
         self._v2_events.clear()
         self._v2_private_events.clear()
         self._v2_simlogs.clear()

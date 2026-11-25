@@ -61,6 +61,11 @@ LOG_COUNT_MAX = 256
 # Spoken answers kept for the browsers (newest first out), and their bytes.
 WEB_VOICE_CLIPS = 8
 WEB_VOICE_BYTES = 24 * 1024 * 1024
+# Log entries spoken for the browsers of one side (newest kept), their
+# bytes, and how many of them are at the speech service at once.
+WEB_LOG_CLIPS = 12
+WEB_LOG_BYTES = 16 * 1024 * 1024
+WEB_LOG_IN_FLIGHT = 2
 
 
 def log_group(category) -> str | None:
@@ -99,6 +104,16 @@ class VoiceMixin:
         self._web_voice_pending: list = []
         self.web_voice_clips: OrderedDict = OrderedDict()
         self.web_voice_rate = self._voice_rate()
+        # The log read aloud for browser stations: the sides whose browsers
+        # listen (set by the Remote Crew bridge), per side where its log was
+        # read up to, what waits, what is at the service, and the finished
+        # clips (seq -> (group, called, int16 bytes)).
+        self.web_log_sides: frozenset = frozenset()
+        self._web_log_marks: dict = {}
+        self._web_log_backlog: dict = {}
+        self._web_log_pending: list = []
+        self.web_log_clips: dict = {}
+        self.web_log_seq = 0
 
     def _voice_rate(self) -> int:
         return int(getattr(self.audio, "sample_rate", 22050) or 22050)
@@ -142,9 +157,25 @@ class VoiceMixin:
 
     # -- speaking ----------------------------------------------------------------
 
-    def voice_say(self, text, role: str) -> bool:
+    def station_voice_of(self, group) -> str:
+        """The voice one station of the log speaks with (the chosen voice
+        without station voices, and for the officer)."""
+        main = self.preferences.tts_voice
+        if not self.preferences.tts_station_voices:
+            return main
+        return voice_model.station_voice(main, group)
+
+    def voice_colour_of(self, role: str, group) -> str:
+        """Over which net a report comes: the officer and the test sentence
+        stand beside the commander; the radio room uses the radio net."""
+        if not self.preferences.tts_intercom or role not in ("crew", "log"):
+            return ""
+        return "radio" if group == "funk" else "intercom"
+
+    def voice_say(self, text, role: str, group=None) -> bool:
         """Queue one sentence for the natural voice; False when it is not used
-        (the caller keeps its own voice, if any)."""
+        (the caller keeps its own voice, if any).  ``group``: the station of
+        the log that speaks (its own voice and net)."""
         if not self.voice_ready():
             return False
         if role == "crew" and not self.preferences.tts_crew:
@@ -159,11 +190,17 @@ class VoiceMixin:
             return False
         # One request for the whole report: the model would start every
         # extra request with a slightly different voice.
-        request = self.voice.say(text, self.llm_language(), role)
+        request = self._voice_request(text, role, group)
         if request is None:
             return False
         self._voice_queue.append(request)
         return True
+
+    def _voice_request(self, text: str, role: str, group=None):
+        voice = self.station_voice_of(group) if role in ("crew", "log") else None
+        return self.voice.say(text, self.llm_language(), role,
+                              voice=None if voice == self.preferences.tts_voice else voice,
+                              colour=self.voice_colour_of(role, group))
 
     def _voice_text(self, text) -> str:
         """Numbers digit by digit in the game's language ("vier drei eins"),
@@ -230,6 +267,10 @@ class VoiceMixin:
     def web_voice_stop(self) -> None:
         self._web_voice_pending = []
         self.web_voice_clips.clear()
+        self._web_log_pending = []
+        self._web_log_backlog = {}
+        self._web_log_marks = {}
+        self.web_log_clips = {}
 
     def voice_stop(self) -> None:
         voice = getattr(self, "voice", None)
@@ -333,10 +374,12 @@ class VoiceMixin:
         since = time.monotonic() - LOG_COUNT_S
         return sum(1 for when, seen in self._log_voice_seen if seen == group and when >= since)
 
-    def _log_voice_entries(self):
-        """``(log, count, entries)`` of the local side: the frigate's feed
-        or the crewed boat's log; entries as ``(category, text)``."""
-        if getattr(self, "local_side", "frigate") == "uboot":
+    def _log_voice_entries(self, side: str | None = None):
+        """``(log, count, entries)`` of one side (the local one by default):
+        the frigate's feed or the crewed boat's log; entries as
+        ``(category, text)``."""
+        side = getattr(self, "local_side", "frigate") if side is None else side
+        if side == "uboot":
             boat = getattr(self, "_opfor", None)
             if boat is None:
                 return None, 0, ()
@@ -378,11 +421,18 @@ class VoiceMixin:
             self._log_voice_seen.append((now, group))
             if not ready or not self.log_voice_on(group):
                 continue
-            if crew_speaks and callouts.callout_of(text, side) is not None:
-                continue            # the crew already calls this one out
+            called = callouts.callout_of(text, side) is not None
             spoken = localize(text, self.tr)
+            if crew_speaks and called:
+                # The crew already calls this one out here; listening
+                # browsers of this side still get it (as a call).
+                if spoken and self._web_log_shares_local():
+                    self._web_log_backlog.setdefault(
+                        self._local_web_side(), deque(maxlen=LOG_BACKLOG_MAX)).append(
+                            (spoken, group, True))
+                continue
             if spoken:
-                self._log_voice_backlog.append(spoken)
+                self._log_voice_backlog.append((spoken, group, called))
 
     def _feed_log_voice(self) -> None:
         """Hand the waiting entries to the speech service, oldest first, at
@@ -401,8 +451,102 @@ class VoiceMixin:
             # Each entry is its own request, closed with a full stop, and
             # VOICE_GAP_S of silence follows it: a speech model leaves only
             # its short sentence pause between entries sent together.
-            if self.voice_say(_sentence(backlog.popleft()), "log"):
+            spoken, group, called = backlog.popleft()
+            if self.voice_say(_sentence(spoken), "log", group):
                 in_flight += 1
+                if self._voice_queue and self._web_log_shares_local():
+                    # The browsers of this side hear the same report.
+                    self._web_log_pending.append((self._local_web_side(), group, called,
+                                                  self._voice_queue[-1]))
+
+    # -- log entries read aloud for browser stations ----------------------------
+
+    def _local_web_side(self) -> str:
+        return "uboot" if getattr(self, "local_side", "frigate") == "uboot" else "frigate"
+
+    def _web_log_shares_local(self) -> bool:
+        """The browsers of the uConsole's own side listen while the uConsole
+        reads that log itself: they get the same requests (one per entry)."""
+        return self._local_web_side() in self.web_log_sides and self.voice_ready()
+
+    def _pump_web_log_voice(self) -> None:
+        """Read the listening browsers' logs (wall time, every frame): the
+        uConsole's own side shares its reports; another side (two crews,
+        or a host without a speaker of its own) gets requests of its own."""
+        if not hasattr(self, "voice"):
+            return
+        if not self.web_log_sides or not self.voice.active or not self.preferences.tts_log:
+            if self._web_log_pending or self._web_log_backlog:
+                self._web_log_pending, self._web_log_backlog = [], {}
+            self._web_log_marks = {}
+            return
+        for side in sorted(self.web_log_sides):
+            if side == self._local_web_side() and self.voice_ready():
+                # Read by the uConsole itself (_feed_log_voice shares it);
+                # only the crew's own calls wait here.
+                self._web_log_marks.pop(side, None)
+                self._feed_web_log(side)
+                continue
+            self._collect_web_log(side)
+            self._feed_web_log(side)
+        waiting = []
+        for side, group, called, request in self._web_log_pending:
+            if not request.finished:
+                waiting.append((side, group, called, request))
+            elif request.ok and request.pcm is not None and len(request.pcm):
+                self._keep_web_log(side, group, called, request.pcm)
+        self._web_log_pending = waiting
+
+    def _collect_web_log(self, side: str) -> None:
+        source, count, entries = self._log_voice_entries(side)
+        mark = self._web_log_marks.get(side)
+        backlog = self._web_log_backlog.setdefault(side, deque(maxlen=LOG_BACKLOG_MAX))
+        if mark is None or mark[0] is not source or count < mark[1]:
+            self._web_log_marks[side] = (source, count)
+            backlog.clear()
+            return
+        fresh = count - mark[1]
+        if fresh <= 0:
+            return
+        self._web_log_marks[side] = (source, count)
+        boat_side = "boat" if side == "uboot" else "frigate"
+        for row in list(entries)[-min(fresh, LOG_COUNT_MAX):]:
+            category, text = ((row["category"], row["text"]) if isinstance(row, dict)
+                              else (row.category, row.text))
+            group = log_group(category)
+            if group is None or not self.log_voice_on(group):
+                continue
+            spoken = localize(text, self.tr)
+            if spoken:
+                backlog.append((spoken, group, callouts.callout_of(text, boat_side) is not None))
+
+    def _feed_web_log(self, side: str) -> None:
+        backlog = self._web_log_backlog.get(side)
+        if not backlog:
+            return
+        in_flight = sum(1 for row in self._web_log_pending if row[0] == side)
+        while backlog and in_flight < WEB_LOG_IN_FLIGHT:
+            spoken, group, called = backlog.popleft()
+            text = voice_model.close_sentence(
+                voice_model.speakable(self._voice_text(_sentence(spoken)),
+                                      clean=self.voice.config.clean))
+            request = self._voice_request(text, "log", group) if text else None
+            if request is not None:
+                self._web_log_pending.append((side, group, called, request))
+                in_flight += 1
+
+    def _keep_web_log(self, side: str, group, called: bool, pcm) -> None:
+        if self.voice.rate != self.web_voice_rate:
+            # Clips of another rate cannot share the browsers' header.
+            self.web_log_clips = {}
+            self.web_voice_clips.clear()
+            self.web_voice_rate = self.voice.rate
+        clips = self.web_log_clips.setdefault(side, OrderedDict())
+        self.web_log_seq += 1
+        clips[self.web_log_seq] = (group, bool(called), np.asarray(pcm, dtype="<i2").tobytes())
+        while clips and (len(clips) > WEB_LOG_CLIPS
+                         or sum(len(row[2]) for row in clips.values()) > WEB_LOG_BYTES):
+            clips.popitem(last=False)
 
     # -- settings -----------------------------------------------------------------
 

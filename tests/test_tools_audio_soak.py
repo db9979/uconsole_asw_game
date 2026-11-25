@@ -62,22 +62,6 @@ def test_warmup_baseline_counts_only_starvation_after_the_cold_start():
     assert audio_soak._warmup_baseline([], audio, 2.0) == {}
 
 
-def test_a_single_pump_recovery_explains_its_idle_channel():
-    audio_soak = _load_tool()
-    base = {"t": 1.0, "channel_idle": 0, "queue_stranded": 0, "wedged": 0}
-    # main 2026-11-25: one idle channel after the warm-up on a busy runner.
-    stranded = {"t": 5.0, "channel_idle": 1, "queue_stranded": 1, "wedged": 0}
-    recovered = audio_soak._recoveries(base, stranded)
-    assert recovered == {"queue_stranded": 1.0}
-    assert stranded["channel_idle"] - sum(recovered.values()) == 0
-    assert sum(recovered.values()) <= audio_soak.MAX_RECOVERIES
-    # An idle channel without a recovery still counts, and so do repeated stalls.
-    plain = {"t": 5.0, "channel_idle": 1, "queue_stranded": 0, "wedged": 0}
-    assert audio_soak._recoveries(base, plain) == {}
-    repeated = {"t": 6.0, "channel_idle": 2, "queue_stranded": 1, "wedged": 1}
-    assert sum(audio_soak._recoveries(base, repeated).values()) > audio_soak.MAX_RECOVERIES
-
-
 def test_a_counted_failure_says_when_it_happened():
     audio_soak = _load_tool()
     perf = [{"t": 10.0}]

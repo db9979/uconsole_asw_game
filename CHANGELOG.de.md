@@ -6,7 +6,7 @@ Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt 
 
 ## 1.3.300
 
-Die Audio-Dauerprüfung unterscheidet einen einzelnen Mixer-Hänger auf einem ausgelasteten Testrechner (eine hängende Warteschlange oder ein festgefahrener Kanal, den die Sonarpumpe wieder anstößt) von einer echten Lücke und nennt den Zeitpunkt einer gezählten Lücke. Am Spiel selbst ändert sich nichts. Diese Version bringt auch 1.3.299 (der echte Ozean, unten), die nicht einzeln erschien.
+Die Sonar-Audioüberwachung unterscheidet eine Lücke durch die eigene Uhr des Mixers (ein ausgebremster Sound-Thread fällt zurück und spielt das Wartende dann schneller als in Echtzeit, wie auf einem ausgelasteten Testrechner) von einer Lücke durch die Sonarpumpe, und die Audio-Dauerprüfung nennt den Zeitpunkt einer gezählten Lücke. Hörbar ändert sich nichts. Diese Version bringt auch 1.3.299 (der echte Ozean, unten), die nicht einzeln erschien.
 
 ## 1.3.299
 

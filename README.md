@@ -21,7 +21,8 @@ solution. A free AI submarine that hears the frigate launch a torpedo may
 answer at once with a snap shot down the launch bearing if a tube is
 flooded, so turning away after a shot pays. Measured over 40 AI-against-AI
 battles the frigate's win rate moved from 15 % to 22.5 %, within the
-noise. Saves are v53; v38 to v52 saves still load.
+noise. A Remote Crew browser that hands its station over no longer
+falls back to the pairing screen now and then. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

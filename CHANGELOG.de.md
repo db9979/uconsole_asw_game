@@ -15,7 +15,8 @@ nur auf seine eigene Lösung. Ein freies KI-U-Boot, das die Fregatte einen
 Torpedo ausstoßen hört, kann sofort mit einem Schnellschuss die
 Ausstoßpeilung hinunter antworten, wenn ein Rohr geflutet ist; nach einem
 Schuss abzudrehen lohnt sich also. Über 40 Gefechte KI gegen KI stieg die
-Siegquote der Fregatte von 15 % auf 22,5 %, im Rauschen. Spielstände sind
+Siegquote der Fregatte von 15 % auf 22,5 %, im Rauschen. Ein Browser der Remote Crew, der seine Station abgibt, landet
+nicht mehr ab und zu wieder auf der Kopplungsseite. Spielstände sind
 v53; v38- bis v52-Spielstände laden weiterhin.
 
 ## 1.3.297

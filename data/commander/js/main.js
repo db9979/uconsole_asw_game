@@ -71,6 +71,7 @@ import { init as initViewsLeader } from "./views/leader.js";
 import { init as initViewsMissions } from "./views/missions.js";
 import { init as initViewsDebrief } from "./views/debrief.js";
 import { init as initViewsAdvisor } from "./views/advisor.js";
+import { init as initLogVoice } from "./audio/log-voice.js";
 import { init as initAppBootstrap } from "./app/bootstrap.js";
 import { setPageVersion } from "./net/version.js";
 
@@ -90,4 +91,5 @@ initViewsLeader();
 initViewsMissions();
 initViewsDebrief();
 initViewsAdvisor();
+initLogVoice();
 initAppBootstrap();

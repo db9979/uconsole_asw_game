@@ -82,6 +82,7 @@ from src.commander.mission_library import MissionLibrary, editor_catalog
 from src.commander.server import (EVENTS_MAX, HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
                                   SIMLOG_MAX_BYTES, V2_ACTION_REGISTRY, _json_bytes)
 from src.commander.advisor_web import pump_advisor
+from src.commander.log_voice_web import pump_log_voice
 from src.commander.projections import (ROLE_NAMES, build_opfor_states,
                                        build_role_states, known_chart,
                                        redacted_chart, redacted_state)
@@ -146,6 +147,7 @@ class CommanderBridge:
         self._server = None
         # What the advisor last published (src/commander/advisor_web.py).
         self._advisor_published = {}
+        self._log_voice_published = {}
         self._allowed = True
         self._grant_lease = None
         self._identity = None
@@ -950,6 +952,7 @@ class CommanderBridge:
         self._publish_debrief(server, game)
         self._pump_missions(server, now, game)
         pump_advisor(server, game, self._advisor_published)
+        pump_log_voice(server, game, self._log_voice_published)
         if redacted:
             self._refs.clear()
             self._esm_refs.clear()

@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.297
+
+Version 1.3.297 gibt der Besatzung eigene Stimmen. Sind gesprochene
+Logmeldungen an, spricht jede Station mit eigener Stimme aus der Familie
+der gewählten Stimme (Sonar, Funk, OPZ, Waffen, Navigation, Schadensabwehr,
+Ausguck), die Besatzung klingt durch die Bordsprechanlage und der
+Funkraum durch einen rauschenden Funkkanal; beides lässt sich in den
+Sprachmodell-Einstellungen (Seite 3) abschalten. Auch ein Browser der
+Remote Crew kann jetzt die Logmeldungen vorlesen: das Kästchen
+"Logmeldungen vorlesen (Stimme des Hosts)" in seiner Kopfzeile spielt die
+Sprachclips des Hosts für seine Seite. Spielstände sind v53; v38- bis
+v52-Spielstände laden weiterhin.
+
 ## 1.3.296
 
 Version 1.3.296 behebt Spielstände der U-Boot-Seite, die sich nicht laden

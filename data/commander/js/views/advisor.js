@@ -7,6 +7,7 @@ import { stationActionAvailable } from "../state/availability.js";
 import { boundedArray, exactKeys } from "../state/schema.js";
 import { node } from "./dom.js";
 import { keyLabel } from "../input/station-keys.js";
+import { audioContext, queueVoice, stopVoice } from "../audio/host-voice.js";
 
 // ---- Executive officer (optional language model) -----------------------------
 // Mirrors src/core/game_advisor.py: situation report, question, typed order,
@@ -28,7 +29,6 @@ const advisor = {mode: "situation", doc: null, timer: null, applied: new Set(), 
   spoken: new Set(), heard: null, voiceUntil: 0};
 // How long the log is still polled for an answer's voice after the dialog closed.
 const VOICE_WAIT_MS = 120000;
-const VOICE_MAX_BYTES = 16 * 1024 * 1024;
 
 function validCommand(row) {
   return exactKeys(row, ["type", "value", "action", "params", "stations"]) && typeof row.type === "string" &&
@@ -171,13 +171,6 @@ function render() {
 
 // ---- The officer's voice ------------------------------------------------------
 function voiceOn() { return $("advisor-voice")?.checked !== false; }
-async function audioContext() {
-  const Audio = window.AudioContext || window.webkitAudioContext;
-  if (!Audio) return null;
-  if (!S.audio) S.audio = new Audio();
-  if (S.audio.state !== "running") await S.audio.resume().catch(() => {});
-  return S.audio.state === "running" ? S.audio : null;
-}
 // Answers already in the log when it was first read are not said again.
 function settleHeard(log) {
   if (advisor.heard === null) advisor.heard = log.reduce((top, entry) => Math.max(top, entry.seq), 0);
@@ -186,41 +179,12 @@ function awaitingVoice(log) {
   return voiceOn() && advisor.doc?.voice === true && log.some((entry) => entry.seq > advisor.heard && entry.status === "done" &&
     !advisor.spoken.has(entry.seq) && !entry.voice);
 }
-// One answer after the other, each as one sound (the voice never jumps).
-let voiceChain = Promise.resolve();
-let voiceSource = null;
-function stopVoice() {
-  try { voiceSource?.stop(); } catch (_) { /* already ended */ }
-  voiceSource = null;
-}
-async function playVoice(seq) {
-  const response = await fetch(`/api/v2/advisor/voice?seq=${seq}`, {
-    cache: "no-store", credentials: "same-origin", redirect: "error", mode: "same-origin"});
-  const rate = Number(response.headers.get("X-U-Jagd-Sample-Rate"));
-  if (response.status !== 200 || response.headers.get("X-U-Jagd-PCM") !== "s16le" ||
-      !(rate >= 8000 && rate <= 48000)) return;
-  const raw = await response.arrayBuffer();
-  if (raw.byteLength < 2 || raw.byteLength > VOICE_MAX_BYTES || !voiceOn()) return;
-  const context = await audioContext();
-  if (!context) return;
-  const samples = new Int16Array(raw, 0, raw.byteLength >> 1);
-  const buffer = context.createBuffer(1, samples.length, rate);
-  const channel = buffer.getChannelData(0);
-  for (let index = 0; index < samples.length; index++) channel[index] = samples[index] / 32768;
-  const source = context.createBufferSource();
-  source.buffer = buffer;
-  source.connect(context.destination);
-  voiceSource = source;
-  await new Promise((resolve) => { source.onended = resolve; source.start(); });
-  source.disconnect();
-  if (voiceSource === source) voiceSource = null;
-}
 function speakNew(log) {
   settleHeard(log);
   for (const entry of log) {
     if (entry.seq <= advisor.heard || !entry.voice || advisor.spoken.has(entry.seq)) continue;
     advisor.spoken.add(entry.seq);
-    if (voiceOn()) voiceChain = voiceChain.then(() => playVoice(entry.seq)).catch(() => {});
+    if (voiceOn()) queueVoice(`/api/v2/advisor/voice?seq=${entry.seq}`, voiceOn);
   }
 }
 

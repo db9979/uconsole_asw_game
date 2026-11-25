@@ -118,6 +118,11 @@ class Preferences:
     tts_top_p: float = voice_model.DEFAULT_TOP_P
     tts_seed: int = voice_model.DEFAULT_SEED
     tts_clean: bool = True
+    # Each station of the log speaks with its own voice of the chosen
+    # voice's family, and every station but the officer comes over the
+    # internal net (the radio room over the radio net).
+    tts_station_voices: bool = True
+    tts_intercom: bool = True
     # Its optional speech input (OpenAI-compatible transcription endpoint,
     # src/llm/stt.py): off by default; the key lives beside the others
     # (``stt_key``). The talk key asks the executive officer by voice.
@@ -177,6 +182,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
                  "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "microphone", "live_ais_enabled",
                  "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns",
                  "tts_enabled", "tts_xo", "tts_crew", "tts_clean", "tts_log", "stt_enabled",
+                 "tts_station_voices", "tts_intercom",
                  *(f"tts_log_{group}" for group in LOG_VOICE_GROUPS),
                  "graphics_auto"):
         value = payload.get(name, getattr(defaults, name))

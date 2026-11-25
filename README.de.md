@@ -10,18 +10,18 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.296**
+Aktuelle Version: **1.3.297**
 
-Version 1.3.296 behebt Spielstände der U-Boot-Seite, die sich nicht laden
-ließen. Wenn ein KI-U-Boot Kurs und Fahrt eines Ziels nur aus Peilungen
-bestimmte, konnte der Feinschliff bei einer kurzen, verrauschten
-Peilreihe davonlaufen, und das U-Boot hielt seinen Kontakt für über 300 kn
-schnell. Ein Spielstand aus diesem Moment wurde beim Laden abgelehnt, was
-auch Autosave und Absturz-Wiederherstellung traf; der nächtliche
-Dauertest scheiterte deshalb seit dem 8. Oktober auf der U-Boot-Seite.
-Ein solches Ergebnis wird jetzt verworfen, und das U-Boot behält seine
-grobe, aber vernünftige Schätzung. Spielstände sind v53; v38 bis v52
-laden weiter.
+Version 1.3.297 gibt der Besatzung eigene Stimmen. Sind gesprochene
+Logmeldungen an, spricht jede Station mit eigener Stimme aus der Familie
+der gewählten Stimme (Sonar, Funk, OPZ, Waffen, Navigation, Schadensabwehr,
+Ausguck), die Besatzung klingt durch die Bordsprechanlage und der
+Funkraum durch einen rauschenden Funkkanal; beides lässt sich in den
+Sprachmodell-Einstellungen (Seite 3) abschalten. Auch ein Browser der
+Remote Crew kann jetzt die Logmeldungen vorlesen: das Kästchen
+"Logmeldungen vorlesen (Stimme des Hosts)" in seiner Kopfzeile spielt die
+Sprachclips des Hosts für seine Seite. Spielstände sind v53; v38- bis
+v52-Spielstände laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

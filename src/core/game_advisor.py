@@ -25,7 +25,8 @@ LLM_ROWS = ("llm_enabled", "llm_url", "llm_model", "llm_key", "llm_radio", "llm_
 VOICE_ROWS = ("tts_enabled", "tts_url", "tts_model", "tts_voice", "tts_key", "tts_xo",
               "tts_crew", "tts_test")
 # How the voice sounds: sampling of speech models that take it, clean-up.
-TUNE_ROWS = ("tts_temperature", "tts_top_p", "tts_seed", "tts_clean", "tts_test")
+TUNE_ROWS = ("tts_temperature", "tts_top_p", "tts_seed", "tts_clean", "tts_station_voices",
+             "tts_intercom", "tts_test")
 # The stations' log entries read aloud: the master switch, then one row per
 # station of the log (``config.LOG_VOICE_GROUPS``).
 LOG_ROWS = ("tts_log",) + tuple(f"tts_log_{group}" for group in config.LOG_VOICE_GROUPS)

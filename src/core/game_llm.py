@@ -106,6 +106,8 @@ class LlmMixin:
             self.voice_advisor_entry(entry)
         # Answers spoken for browser stations, kept until fetched.
         self._pump_web_voice()
+        # The log read aloud for listening browser stations.
+        self._pump_web_log_voice()
         self._poll_llm_reports()
         self._poll_llm_review()
         self._poll_mission_generator()

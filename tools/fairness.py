@@ -75,13 +75,22 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--short", action="store_true", help="the short mission variant")
     parser.add_argument("--max-sim-s", type=float, default=None,
                         help="stop each game after this much mission time (smoke runs)")
+    parser.add_argument("--world", default="fixed", choices=("fixed", "procedural", "real_fixed"),
+                        help="map of each game: the fictional fixed region (default) or the "
+                             "seed's real sector")
+    parser.add_argument("--synthetic-sea", action="store_true",
+                        help="the synthetic sea instead of the real depths and surface layer "
+                             "(src/world/real_ocean.py), for a before/after comparison")
     parser.add_argument("--out", help="write rows and summary to this JSON file")
     return parser
 
 
 def run(job) -> dict:
     """One game, start to end (call in a fresh process)."""
-    scenario, seed, dt, idle, crewed, short, max_sim_s = job
+    scenario, seed, dt, idle, crewed, short, max_sim_s, world, synthetic_sea = job
+    if synthetic_sea:
+        from src.world import real_ocean
+        real_ocean.hold_reference_sea()   # this process only plays this game
     from src.core import hunter
     from src.core.game import Game
     if not idle:
@@ -93,7 +102,7 @@ def run(job) -> dict:
         game.local_side = "uboot"
     if short:
         game.start_length = "short"
-    game.start_new_game(KEYS[scenario], "fixed", seed=seed)
+    game.start_new_game(KEYS[scenario], world, seed=seed)
     if crewed:
         game.autocrew.set_assist(True, game.sim_t)
         game._update(0.05)          # binds the crewed boat, as on the uConsole
@@ -141,7 +150,8 @@ def summarise(rows) -> dict:
 
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
-    jobs = [(scenario, seed, args.dt, args.idle, args.crewed, args.short, args.max_sim_s)
+    jobs = [(scenario, seed, args.dt, args.idle, args.crewed, args.short, args.max_sim_s,
+             args.world, args.synthetic_sea)
             for scenario in args.scenarios for seed in args.seeds]
     # A fresh interpreter per game: no entity ids or caches carried over.
     context = multiprocessing.get_context("spawn")

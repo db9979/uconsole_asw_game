@@ -133,9 +133,15 @@ def test_land_ratio_and_central_ocean_connectivity_across_seeds():
         assert len(reached) >= len(water) * 0.85
 
 
-def test_bathymetry_is_seeded_and_deepens_away_from_coast():
+@pytest.mark.real_sea
+def test_bathymetry_is_the_real_chart_of_the_sector():
+    from src.world import real_ocean
+
     coast = Coastline.generate(44)
-    assert coast.depth_m(250.0, 250.0) > 350.0
+    real = real_ocean.sector(coast.metadata["sector_id"])["depth"]
+    middle = len(real) // 2
+    assert coast.depth_m(250.0, 250.0) == pytest.approx(
+        max(35.0, real[middle][middle]))
     assert coast.depth_m(250.0, 250.0) != Coastline.generate(45).depth_m(250.0, 250.0)
     land_point = next((x, y) for y in range(0, 501, 10)
                       for x in range(0, 501, 10) if coast.on_land(x, y))

@@ -241,7 +241,8 @@ Counter-flooding, listed here as out of scope in 1.1.0, exists since 1.3:
 Damage control's `C` floods the high hull side against a list of 5 degrees or
 more (`src/ship/damage.py`, manual chapter 6).
 
-Real-world geography, seabed and weather used by the world are synthetic or
-generalised (see `THIRD_PARTY_NOTICES.md` and the manual's disclaimers); the
+Coastlines (Natural Earth), water depths (NOAA ETOPO1, about 15 NM cells)
+and the monthly surface layer (World Ocean Atlas 2023) are real but
+generalised; currents, seabed type and weather are synthetic (see `THIRD_PARTY_NOTICES.md` and the manual's disclaimers); the
 physics models are plausible engineering approximations anchored to the
 1.0.0 gameplay, not validated naval data.

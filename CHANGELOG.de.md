@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.299
+
+Version 1.3.299 legt den echten Ozean unter die echten Küsten. Jedes der
+128 Seegebiete hat jetzt seinen echten Meeresboden (NOAA ETOPO1, Zellen von
+etwa 15 sm): Schelfmeere wie Nordsee oder Gelbes Meer sind 30-150 m tief,
+der offene Ozean mehrere tausend Meter, wo sich Konvergenzzonen bilden.
+Oberflächentemperatur und Deckschicht folgen den echten Monatsmitteln des
+Gebiets (World Ocean Atlas 2023), von etwa 5 Grad C im nördlichen Winter
+bis 29 Grad C in den Tropen; eine Sommersee schichtet sich scharf und
+versteckt ein tiefes U-Boot. Bis zu drei erfundene Untiefen bleiben, nur
+auf dem Schelf. Eigene Karten behalten die synthetische See. Spielstände
+sind v53; v38- bis v52-Spielstände laden weiterhin, und ein gespeichertes
+Spiel behält seine Karte.
+
 ## 1.3.298
 
 Version 1.3.298 lässt die KI-U-Boote als Rudel jagen. Zwei oder mehr freie

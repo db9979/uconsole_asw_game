@@ -29,6 +29,8 @@ _MAX_SNAPSHOT_LANDMASSES = 4096
 _MAX_SNAPSHOT_POINTS = 200_000
 _MAX_SNAPSHOT_AIRBASES = 4096
 _MAX_BATHYMETRY_GRID = 257
+# Synthetic shoals on a real chart sit only on the shelf, not over deep water.
+SHOAL_MAX_DEPTH_M = 200.0
 
 
 def _point_in_poly(x: float, y: float, pts: list) -> bool:
@@ -342,11 +344,19 @@ class Coastline:
         }
         coast = cls(data, size)
         sector_number = int(sector["id"].rsplit("-", 1)[-1])
-        coast._bathymetry = coast._generate_bathymetry(random.Random(sector_number))
-        coast._add_synthetic_shallows(random.Random(sector_number + 180_018))
+        from src.world import real_ocean
+
+        real = real_ocean.bathymetry(sector["id"], coast.on_land, size)
+        coast._bathymetry = (real if real is not None
+                             else coast._generate_bathymetry(random.Random(sector_number)))
+        # Real depths: the hazards stay on the shelf (shoals, not seamounts).
+        coast._add_synthetic_shallows(random.Random(sector_number + 180_018),
+                                      max_depth_m=(SHOAL_MAX_DEPTH_M if real is not None
+                                                   else math.inf))
         return coast
 
-    def _add_synthetic_shallows(self, rng: random.Random) -> None:
+    def _add_synthetic_shallows(self, rng: random.Random,
+                                max_depth_m: float = math.inf) -> None:
         """Embed bounded fictional hazards only in a newly generated snapshot."""
         grid = self._bathymetry["values"]
         size = self._bathymetry["size"]
@@ -355,7 +365,7 @@ class Coastline:
                          if scenario["ship_start"] is not None)
         candidates = [(row, column) for row in range(2, size - 2)
                       for column in range(2, size - 2)
-                      if grid[row][column] > 40.0
+                      if 40.0 < grid[row][column] <= max_depth_m
                       and all(math.hypot(
                           column * self.world_size_nm / (size - 1) - px,
                           row * self.world_size_nm / (size - 1) - py) > 75.0

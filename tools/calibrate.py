@@ -499,10 +499,16 @@ SECTIONS = {
 
 
 def measure_all(sections=None) -> dict:
+    """Measure in the synthetic reference sea of 1.0.0: the calibration
+    holds the sensor and weapon physics, not the real sea of one sector
+    (``src/world/real_ocean.py``)."""
+    from src.world import real_ocean
+
     metrics = {}
-    for name, function in SECTIONS.items():
-        if sections is None or name in sections:
-            metrics.update(function())
+    with real_ocean.reference_sea():
+        for name, function in SECTIONS.items():
+            if sections is None or name in sections:
+                metrics.update(function())
     return dict(sorted(metrics.items()))
 
 

@@ -57,8 +57,9 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Vorgang | Modell |
 |---|---|
 | Gezeit | M2 (12,42 h) + S2 (12 h), 0,4-1,4 m Amplitude, im Flachwasser größer |
-| Deckschicht | jahreszeitliche Grundtiefe; nachmittags etwa 8 m flacher; vertieft sich bei Wind über 12 kn; interne Wellen +/-6 m |
-| Schallgeschwindigkeit | Mackenzie-Gleichung aus dem Temperaturprofil (Oberfläche 8-18 Grad C je nach Jahreszeit) |
+| Wassertiefe | der echte Meeresboden des Seegebiets (NOAA-ETOPO1-Relief, Mittel des Wassers um jeden Punkt eines 33 x 33-Gitters, etwa 15 sm Abstand): Schelfmeere wie Nordsee oder Gelbes Meer sind 30-150 m tief, der offene Ozean mehrere tausend Meter; tiefes Wasser trägt Konvergenzzonen. Bis zu drei erfundene Untiefen liegen auf dem Schelf (höchstens 200 m tief) |
+| Deckschicht | die echte Deckschicht des Seegebiets für den Monat (World Ocean Atlas 2023: Tiefe, in der das Wasser 0,5 Grad C kälter ist als an der Oberfläche), je Gebiet wie bisher gestreut; nachmittags etwa 8 m flacher; vertieft sich bei Wind über 12 kn; interne Wellen +/-6 m |
+| Schallgeschwindigkeit | Mackenzie-Gleichung aus dem Temperaturprofil (Oberfläche aus dem Monatsmittel des World Ocean Atlas 2023 für das Seegebiet, von etwa 5 Grad C im nördlichen Winter bis 29 Grad C in den Tropen) |
 | Strömung | festes Feld bis 1 kn plus 3 % des Windes, 20 Grad rechts der Windrichtung |
 | Meeresboden | Fels, Kies, Sand, Schluff oder Schlick; beeinflusst die Bodenreflexion |
 | Hindernisse | bis zu 64 kartierte Wracks und Unterwasserfelsen (Spitzen mindestens 15 m tief), auf jeder Karte eingetragen (Wrack: Rumpfstrich mit Masten, Fels: Sternchen; Tiefe der Oberkante beim Heranzoomen, Details im Tooltip); beide heben in ihrer Grundfläche den Meeresboden an und sind Hindernisse für Schiff, U-Boote und Waffen |

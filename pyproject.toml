@@ -77,4 +77,5 @@ markers = [
     "xdist_group: pytest-xdist scheduling group (browser tests share two)",
     "slow: takes more than about 20 s on the development host",
     "hardware: needs the real uConsole (never run in CI)",
+    "real_sea: sees the real sea of the sector instead of the synthetic reference sea",
 ]

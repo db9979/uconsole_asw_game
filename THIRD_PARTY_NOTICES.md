@@ -34,7 +34,9 @@ zu prüfen und beizubehalten.
 - `src/ui/ocean.py` und `data/commander/js/views/ocean.js` sind eine
   Übertragung der Wasseroberfläche von Tiefenkontakt (Wellenzüge aus
   `waves.ts`, Schattierung aus dem Ozean-Shader; MIT-Lizenz, siehe oben) in
-  einen 2D-Zeichner.
+  einen 2D-Zeichner. `src/ui/skyshade.py` und `data/commander/js/views/sky.js`
+  übertragen ebenso den Himmel von Tiefenkontakt (Himmels-Shader aus
+  `sky.ts`: Wolkendecke, Zirren, Sonnenhof, Dunstband; MIT-Lizenz).
 - `data/contacts/*.json` enthält für das Spiel erstellte Modellprofile. Namen
   realer oder realistisch anmutender Plattformklassen bezeichnen keine
   Übernahme geschützter Herstellerdaten und keine technische Verifikation.

@@ -59,7 +59,7 @@ export function noise(px, py) {
   const top = a + (b - a) * ux;
   return top + ((c + (d - c) * ux) - top) * uy;
 }
-function fbm(px, py) {
+export function fbm(px, py) {
   let value = 0, weight = .5;
   for (let i = 0; i < 4; i++) { value += weight * noise(px, py); px *= 2; py *= 2; weight *= .5; }
   return value;

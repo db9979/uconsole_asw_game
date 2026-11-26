@@ -10,18 +10,17 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.303**
+Current release: **1.3.304**
 
-Release 1.3.303 brings the sea of Tiefenkontakt into the binoculars, the
-lookout strip and the periscope. The sea is now shaded like a real water
-surface: twelve wave trains from the wind and the sea state, from long swell to
-short chop, with the sky reflected in the slopes, dark blue-green water below,
-the sun's or moon's glitter path, foam on the crests in a rising sea, spindrift
-streaks in a gale, rain pocks and haze toward the horizon. The waves stay where
-they are on the water, so your own way streams them past, and the wake shows as
-lighter churned water. The browser's binoculars and periscope draw the same
-sea. On the uConsole the graphics level "Economy" keeps the lighter wave rows.
-Saves stay v53.
+Release 1.3.304 brings the sky of Tiefenkontakt into the binoculars, the
+lookout strip, the periscope and the weather picture. A cloud deck now follows
+the cloud cover, from a few fair-weather clouds to a broken deck and overcast:
+lit from the sun's side with bright tops, grey bases and a silver lining, red
+at dusk and dark at night, it drifts with the wind and passes overhead as the
+ship moves. Fair weather shows high cirrus, the sun has a halo, and a haze band
+lies on the horizon that thickens in rain and fog. Rain falls in pale streaks,
+long close to the eye and short farther off. The browser draws the same sky.
+The Economy graphics level keeps the simpler sky. Saves stay v53.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -6878,7 +6878,7 @@
   "option.graphics.low": "Sparsam",
   "option.graphics.normal": "Normal",
   "option.graphics.full": "Voll",
-  "option.graphics.help": "Sparsam: einfache Skalierung, kein Nachleuchten, einfache Wellenreihen; spart Rechenzeit. Normal (uConsole-Standard): alle Effekte. Voll (Windows-Standard): glatte Linien. + auto: unter 14 Bildern/s für 5 s selbst Sparsam (ECO-Lampe). Nie die Simulation.",
+  "option.graphics.help": "Sparsam: einfache Skalierung, kein Nachleuchten, einfacher Himmel und Wellenreihen; spart Rechenzeit. Normal (uConsole-Standard): alle Effekte. Voll (Windows-Standard): glatte Linien. + auto: unter 14 Bildern/s für 5 s selbst Sparsam (ECO-Lampe). Nie die Simulation.",
   "option.graphics.auto": "{level} + auto Sparsam",
   "eco_lamp.tag": "ECO",
   "eco_lamp.label": "Automatisch sparsam",

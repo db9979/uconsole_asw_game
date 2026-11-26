@@ -4,8 +4,8 @@ The ``graphics`` preference picks one of three levels:
 
 * ``low`` ("Sparsam"): plain pixel scaling of the canvas, no PPI afterglow,
   the menu and overlay backdrop animates at 4 frames a second, the sight
-  pictures draw simple wave rows instead of the shaded sea
-  (``src/ui/ocean.py``);
+  pictures draw simple wave rows and clouds instead of the shaded sea and
+  sky (``src/ui/ocean.py``, ``src/ui/skyshade.py``);
 * ``normal``: sharp smooth scaling (below), every effect; the uConsole default;
 * ``full``: like ``normal`` plus anti-aliased chart lines; the default on
   Windows.

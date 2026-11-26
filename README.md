@@ -10,19 +10,17 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.301**
+Current release: **1.3.302**
 
-Release 1.3.301 brings the ships of Tiefenkontakt, the browser submarine game,
-into the binoculars, the periscope and the contact analyzer. Corvettes,
-frigates and destroyers up to 160 m, container ships, tankers, bulk
-carriers, reefers, RoRo ships, general cargo ships, ferries, tugs, trawlers
-and every submarine type now show as detailed models with masts, cranes,
-containers, boats and guns, stretched to the real beam and draught of their
-type; carriers, cruisers, big destroyers, cruise ships and auxiliaries keep
-their own models. By day the ships show their paint; at night and
-in haze they fade to the dark outline as before. On the uConsole a detailed
-model is prepared in the background on first sight (the outline shows
-meanwhile). Saves stay v53.
+Release 1.3.302 puts the real coasts and mountains on the horizon, in the look
+of Tiefenkontakt. The binoculars, the lookout strip and the periscope now show
+the land of every one of the 128 sea areas at its real height (NOAA ETOPO1):
+the coast in front, the ranges behind it in paler, hazier rows, out to where
+the curve of the Earth hides them (a 1,000 m range from about 40 NM). The land
+is coloured by height and steepness, sand at the waterline, green hills, grey
+rock and snow above the snow line of the sea area's latitude, and fades at
+dusk and in haze. The browser's binoculars and periscope show the same land.
+Own maps keep the assumed coast. Saves stay v53.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -60,7 +60,8 @@ def _frigate(game):
                 horizon_tilt=_number(tilt), motion_pitch=_number(pitch),
                 motion_roll=_number(roll), sky=projections._sky(game), outlines=outlines,
                 calls=_calls(game, "frigate"),
-                events=projections._sight_events(sight_events.frigate_rows(game), game.sim_t))
+                events=projections._sight_events(sight_events.frigate_rows(game), game.sim_t),
+                land=horizon.land_wire(projections._lookout_land(game)))
 
 
 def _boat(game, boat):
@@ -91,7 +92,7 @@ def _boat(game, boat):
                 visibility_nm=scope["visibility_nm"], sea_state=scope["sea_state"],
                 horizon_offset=scope["horizon_offset"], horizon_tilt=scope["horizon_tilt"],
                 motion_pitch=None, motion_roll=None, sky=scope["sky"], outlines=outlines,
-                calls=_calls(game, "boat"), events=scope["events"])
+                calls=_calls(game, "boat"), events=scope["events"], land=scope["land"])
 
 
 def build_lookout_states(game, status, boat, redacted):

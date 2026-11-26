@@ -7,8 +7,11 @@ detached ``(bearing, span_deg, cls, stale)`` rows; nothing here reads an
 entity.
 """
 
+import base64
 from collections import OrderedDict
 import math
+import struct
+from typing import NamedTuple
 
 import numpy as np
 import pygame
@@ -18,6 +21,7 @@ from src.core.i18n import message, raw_text
 from src.physics import ship_dynamics
 from src.sensors import nav_lights
 from src.ui import layout, quality, ship_way, sight_events_view, sight_scene, silhouettes, unit_models
+from src.world import real_relief
 
 SCALE_COLOR = (170, 232, 208)
 CROSSHAIR_COLOR = (120, 214, 180)
@@ -34,14 +38,60 @@ LOW_AIR_DEG = 1.0
 # the default eye of a picture whose own way names none.
 DEFAULT_EYE_M = 18.0
 # Charted coast on the horizon: rays per full circle, the observer's move that
-# re-casts them, the bounded cache, and the assumed coastal heights (m; the
-# chart has no elevation, so hills vary smoothly along the coast).
+# re-casts them, the bounded cache.  A real sector reads the real land heights
+# (src/world/real_relief.py) out to ``LAND_VIEW_MAX_NM`` and draws them in
+# ``LAND_BANDS_NM`` staggered ranges (far ranges paler in the haze); any other
+# coast keeps the assumed heights ``LAND_HEIGHT_M`` varying smoothly along it.
 LAND_RAYS = 720
 LAND_RECAST_NM = 0.1
 LAND_CACHE_MAX = 4
 LAND_HEIGHT_M = (25.0, 70.0)
-LAND_DAY, LAND_NIGHT = (52, 66, 58), (8, 20, 26)
+LAND_VIEW_MAX_NM = real_relief.MARGIN_NM
+LAND_BANDS_NM = (0.0, 4.0, 12.0, math.inf)
+LAND_SAMPLES = 56
+# The lowest coast (m) where the chart has land but the relief grid is water.
+COAST_MIN_M = 10.0
+# Rays to each side over which a crest's colour is averaged.
+LAND_COLOR_SMOOTH = 4
+# The haze over land: this share close aboard, rising with the square of
+# the range over the visibility.
+LAND_HAZE_MIN, LAND_HAZE = 0.06, 0.8
+LAND_NIGHT = (8, 20, 26)
+# Land colours of the Tiefenkontakt terrain (sand, grass, rock, snow).
+LAND_SAND, LAND_GRASS = (138, 132, 112), (77, 90, 68)
+LAND_ROCK, LAND_SNOW = (95, 95, 90), (217, 220, 220)
+LAND_DAY = LAND_GRASS
 _LAND_CACHE = OrderedDict()
+
+
+class LandView(NamedTuple):
+    """What the eye sees of the land, per band (near to far) and true
+    bearing ray: the crest's rise above the sea horizon (deg, NaN where the
+    band shows no land), its range (NM) and its day colour (RGB)."""
+    rise: np.ndarray
+    distance: np.ndarray
+    color: np.ndarray
+
+
+def snow_line_m(latitude: float) -> float:
+    """Height (m) above which the land shows snow at ``latitude``."""
+    return config.clamp(4600.0 - 66.0 * abs(latitude), 600.0, 4600.0)
+
+
+def land_colors(height, slope, snow_m: float) -> np.ndarray:
+    """Day colours (N, 3) of land ``height`` (m) on a ``slope`` (m per m):
+    sand at the waterline, grass turning to rock with height and steepness,
+    snow above ``snow_m`` (rock where too steep to hold it)."""
+    height, slope = np.asarray(height, dtype=float), np.asarray(slope, dtype=float)
+    sand, grass = np.array(LAND_SAND, float), np.array(LAND_GRASS, float)
+    rock, snow = np.array(LAND_ROCK, float), np.array(LAND_SNOW, float)
+    to_rock = np.clip(slope * 2.0 + height / (snow_m * 1.4), 0.0, 1.0)[..., None]
+    green = grass + (rock - grass) * to_rock
+    bare = np.clip(slope * 1.5, 0.0, 1.0)[..., None]
+    white = snow + (rock - snow) * bare
+    color = np.where((height > snow_m)[..., None], white, green)
+    color = np.where((height < 6.0)[..., None], sand, color)
+    return np.round(color).astype(np.uint8)
 
 
 def _coast_segments(world, x, y, reach_nm):
@@ -49,11 +99,14 @@ def _coast_segments(world, x, y, reach_nm):
     coast = getattr(world, "coast", None)
     rows = []
     for mass in getattr(coast, "landmasses", ()):
-        left, top, right, bottom = mass.bounds
+        points = np.asarray(getattr(mass, "points", ()), dtype=float).reshape(-1, 2)
+        if len(points) < 2:
+            continue
+        left, top = points.min(axis=0)
+        right, bottom = points.max(axis=0)
         if right < x - reach_nm or left > x + reach_nm or bottom < y - reach_nm \
                 or top > y + reach_nm:
             continue
-        points = np.asarray(mass.points, dtype=float)
         rows.append(np.hstack((points, np.roll(points, -1, axis=0))))
     if not rows:
         return np.zeros((0, 4))
@@ -65,17 +118,9 @@ def _coast_segments(world, x, y, reach_nm):
     return edges[near]
 
 
-def land_profile(world, x: float, y: float, reach_nm: float):
+def coast_distance(world, x: float, y: float, reach_nm: float) -> np.ndarray:
     """Distance (NM) to the charted coast along each of ``LAND_RAYS`` true
-    bearings from (x, y), ``inf`` where no coast lies within ``reach_nm``,
-    and the assumed coast height (m) there.  Known geography only; the
-    result is cached per rounded position (bounded, display only)."""
-    key = (id(getattr(world, "coast", None)), round(x / LAND_RECAST_NM),
-           round(y / LAND_RECAST_NM), round(reach_nm, 1))
-    cached = _LAND_CACHE.get(key)
-    if cached is not None:
-        _LAND_CACHE.move_to_end(key)
-        return cached
+    bearings from (x, y), ``inf`` where no coast lies within ``reach_nm``."""
     edges = _coast_segments(world, x, y, reach_nm)
     angles = np.radians(np.arange(LAND_RAYS) * (360.0 / LAND_RAYS))
     distance = np.full(LAND_RAYS, np.inf)
@@ -92,59 +137,269 @@ def land_profile(world, x: float, y: float, reach_nm: float):
         t = np.where(hit, t, np.inf)
         distance = t.min(axis=1)
         distance[distance > reach_nm] = np.inf
+    return distance
+
+
+def _sea_hidden_m(distance_nm, eye_m: float):
+    """Height (m) of land at ``distance_nm`` hidden behind the sea horizon of
+    an eye ``eye_m`` up (the geometric range 1.17 * (sqrt(eye) + sqrt(h)))."""
+    beyond = np.maximum(0.0, np.asarray(distance_nm) - 1.17 * math.sqrt(max(0.0, eye_m)))
+    return (beyond / 1.17) ** 2
+
+
+def _rise_deg(height_m, distance_nm, eye_m: float):
+    visible = np.asarray(height_m) - _sea_hidden_m(distance_nm, eye_m)
+    return np.degrees(np.arctan2(visible, np.maximum(distance_nm, 0.02) * 1852.0))
+
+
+def _assumed_land(world, x, y, eye_m, reach_nm) -> LandView:
+    """The coast at the assumed heights (a coast without real relief)."""
+    distance = coast_distance(world, x, y, reach_nm)
+    angles = np.radians(np.arange(LAND_RAYS) * (360.0 / LAND_RAYS))
     hx = x + np.sin(angles) * np.where(np.isfinite(distance), distance, 0.0)
     hy = y - np.cos(angles) * np.where(np.isfinite(distance), distance, 0.0)
     low, high = LAND_HEIGHT_M
     wave = 0.5 + 0.25 * np.sin(hx * 2.3 + hy * 1.1) + 0.25 * np.sin(hx * 0.7 - hy * 3.1)
     height = low + (high - low) * np.clip(wave, 0.0, 1.0)
-    result = (distance, height)
+    with np.errstate(invalid="ignore"):
+        rise = np.where(np.isfinite(distance), _rise_deg(height, distance, eye_m), np.nan)
+    color = np.broadcast_to(np.array(LAND_DAY, np.uint8), (1, LAND_RAYS, 3)).copy()
+    return LandView(rise[None, :], distance[None, :], color)
+
+
+def _real_land(world, relief, x, y, eye_m, reach_nm, latitude) -> LandView:
+    """The real land out to ``reach_nm``: per band the highest crest above
+    the sea horizon.  The chart's coast (cast out to the assumed coast's
+    reach) decides where the near land begins; farther out the relief
+    alone tells land from water."""
+    near_reach = min(reach_nm, 1.17 * (math.sqrt(max(0.0, eye_m)) + math.sqrt(LAND_HEIGHT_M[1])))
+    coast = coast_distance(world, x, y, near_reach)
+    angles = np.radians(np.arange(LAND_RAYS) * (360.0 / LAND_RAYS))
+    ray_x, ray_y = np.sin(angles)[:, None], -np.cos(angles)[:, None]
+    steps = (np.linspace(0.0, 1.0, LAND_SAMPLES) ** 1.6 * reach_nm)[None, :]
+    first = np.where(np.isfinite(coast), coast + 0.02, near_reach)[:, None]
+    ranges = np.hstack((first, np.broadcast_to(steps, (LAND_RAYS, LAND_SAMPLES))))
+    height = relief.heights(x + ray_x * ranges, y + ray_y * ranges)
+    # On the chart's coast the land stands at least COAST_MIN_M high.
+    height[:, 0] = np.where(np.isfinite(coast), np.maximum(height[:, 0], COAST_MIN_M), 0.0)
+    # Water before the chart's coast stays water.
+    sea = (ranges < near_reach) & (ranges < coast[:, None])
+    height = np.where(sea, 0.0, height)
+    with np.errstate(invalid="ignore"):
+        rise = np.where(height > 0.0, _rise_deg(height, ranges, eye_m), -np.inf)
+    bands = len(LAND_BANDS_NM) - 1
+    rows = np.arange(LAND_RAYS)
+    out_rise = np.full((bands, LAND_RAYS), np.nan)
+    out_distance = np.full((bands, LAND_RAYS), np.inf)
+    crest_x = np.zeros((bands, LAND_RAYS))
+    crest_y = np.zeros((bands, LAND_RAYS))
+    crest_h = np.zeros((bands, LAND_RAYS))
+    for band in range(bands):
+        low, high = LAND_BANDS_NM[band], LAND_BANDS_NM[band + 1]
+        inside = np.where((ranges >= low) & (ranges < high), rise, -np.inf)
+        best = inside.argmax(axis=1)
+        value = inside[rows, best]
+        seen = np.isfinite(value) & (value > 0.0)
+        out_rise[band] = np.where(seen, value, np.nan)
+        out_distance[band] = np.where(seen, ranges[rows, best], np.inf)
+        crest_x[band] = x + ray_x[:, 0] * ranges[rows, best]
+        crest_y[band] = y + ray_y[:, 0] * ranges[rows, best]
+        crest_h[band] = height[rows, best]
+    # The slope at each crest from the relief around it (m per m).
+    probe = 0.5
+    gx = (relief.heights(crest_x + probe, crest_y) - relief.heights(crest_x - probe, crest_y))
+    gy = (relief.heights(crest_x, crest_y + probe) - relief.heights(crest_x, crest_y - probe))
+    slope = np.hypot(gx, gy) / (2.0 * probe * 1852.0 * relief.scale)
+    color = land_colors(crest_h, slope, snow_line_m(latitude)).astype(float)
+    # Smooth the colours along each band (over the rays that show land), so
+    # neighbouring crests blend rather than stand in stripes.
+    seen = np.isfinite(out_rise)[..., None].astype(float)
+    total, weight = np.zeros_like(color), np.zeros_like(seen)
+    for shift in range(-LAND_COLOR_SMOOTH, LAND_COLOR_SMOOTH + 1):
+        total += np.roll(color * seen, shift, axis=1)
+        weight += np.roll(seen, shift, axis=1)
+    color = np.where(weight > 0, total / np.maximum(weight, 1e-9), color)
+    return LandView(out_rise, out_distance, np.round(color).astype(np.uint8))
+
+
+def land_profile(world, x: float, y: float, reach_nm: float, eye_m: float = DEFAULT_EYE_M):
+    """The land an eye ``eye_m`` above (x, y) sees out to ``reach_nm`` as a
+    ``LandView`` over ``LAND_RAYS`` true bearings.  Known geography only;
+    the result is cached per rounded position (bounded, display only)."""
+    coast = getattr(world, "coast", None)
+    key = (id(coast), round(x / LAND_RECAST_NM), round(y / LAND_RECAST_NM),
+           round(reach_nm, 1), round(eye_m, 1))
+    cached = _LAND_CACHE.get(key)
+    if cached is not None:
+        _LAND_CACHE.move_to_end(key)
+        return cached
+    relief = real_relief.for_coast(coast)
+    if relief is None:
+        result = _assumed_land(world, x, y, eye_m, reach_nm)
+    else:
+        latitude = float(coast.metadata["center"]["latitude"])
+        result = _real_land(world, relief, x, y, eye_m, reach_nm, latitude)
     _LAND_CACHE[key] = result
     while len(_LAND_CACHE) > LAND_CACHE_MAX:
         _LAND_CACHE.popitem(last=False)
     return result
 
 
-def land_view(world, x: float, y: float, eye_height_m: float):
-    """The coast an eye at ``eye_height_m`` above (x, y) can see: the land
-    profile limited by the geometric horizon of the hills and the lookout's
-    land range."""
-    reach = min(config.LOOKOUT_LAND_RANGE_NM,
-                1.17 * (math.sqrt(max(0.0, eye_height_m)) + math.sqrt(LAND_HEIGHT_M[1])))
-    return land_profile(world, x, y, reach)
+def land_view(world, x: float, y: float, eye_height_m: float) -> LandView:
+    """The land an eye at ``eye_height_m`` above (x, y) can see: the charted
+    coast within the geometric horizon of the hills and the lookout's land
+    range; with a real relief the mountains out to their own horizon
+    (at most ``LAND_VIEW_MAX_NM``)."""
+    eye = math.sqrt(max(0.0, eye_height_m))
+    relief = real_relief.for_coast(getattr(world, "coast", None))
+    if relief is None:
+        reach = min(config.LOOKOUT_LAND_RANGE_NM, 1.17 * (eye + math.sqrt(LAND_HEIGHT_M[1])))
+    else:
+        reach = min(LAND_VIEW_MAX_NM,
+                    1.17 * (eye + math.sqrt(max(LAND_HEIGHT_M[1], relief.peak_m))))
+    return land_profile(world, x, y, reach, eye_height_m)
 
 
-def _draw_land(s, rect, land, *, line_of_sight, fov_deg, horizon, tilt, night,
-               visibility_nm, haze_color, colors=None) -> None:
-    distance, height = land
-    px_per_deg = rect.w / fov_deg
-    step = 360.0 / len(distance)
-    base_color = LAND_NIGHT if night else LAND_DAY
-    rim = None if colors is None else colors["rim"]
+def land_nearest(land: LandView) -> np.ndarray:
+    """Range (NM) of the nearest land in sight along each ray, ``inf``
+    where the eye sees none."""
+    seen = np.isfinite(land.rise)
+    return np.where(seen, land.distance, np.inf).min(axis=0)
+
+
+# The land for the browser: every ``LAND_WIRE_STRIDE``-th ray; per band the
+# runs of rays that show land (u16 start, u16 count), per ray the rise
+# (u16, 0.01 deg), the range (u8, ``LAND_WIRE_NM`` steps) and the colour as an
+# index into ``land_palette`` (u8); little-endian, base64.
+LAND_WIRE_STRIDE = 2
+LAND_WIRE_NM = 0.25
+LAND_PALETTE_STEPS = 32
+_LAND_WIRE = OrderedDict()
+
+
+def land_palette() -> np.ndarray:
+    """The land colours the browser gets (``sight-scene.js`` builds the same):
+    sand, grass to rock in ``LAND_PALETTE_STEPS`` steps, snow to rock."""
+    t = np.linspace(0.0, 1.0, LAND_PALETTE_STEPS)[:, None]
+    grass, rock, snow = (np.array(c, float) for c in (LAND_GRASS, LAND_ROCK, LAND_SNOW))
+    rows = np.vstack(([LAND_SAND], grass + (rock - grass) * t, snow + (rock - snow) * t))
+    return np.round(rows).astype(np.uint8)
+
+
+def land_wire(land: LandView | None) -> dict | None:
+    """``land`` packed for the browser's horizon (``sight-scene.js``), None
+    without land in sight."""
+    if land is None or not np.isfinite(land.rise).any():
+        return None
+    cached = _LAND_WIRE.get(id(land))
+    if cached is not None and cached[0] is land:
+        return cached[1]
+    rise = land.rise[:, ::LAND_WIRE_STRIDE]
+    distance = land.distance[:, ::LAND_WIRE_STRIDE]
+    palette = land_palette().astype(int)
+    color = land.color[:, ::LAND_WIRE_STRIDE].astype(int)
+    index = ((color[..., None, :] - palette) ** 2).sum(axis=-1).argmin(axis=-1)
+    bands, rays = rise.shape
+    out = bytearray()
+    for band in range(bands):
+        seen = np.isfinite(rise[band]) & np.isfinite(distance[band])
+        edges = np.flatnonzero(np.diff(np.concatenate(([0], seen.astype(np.int8), [0]))))
+        runs = list(zip(edges[::2].tolist(), edges[1::2].tolist()))
+        out += struct.pack("<H", len(runs))
+        for start, stop in runs:
+            out += struct.pack("<HH", start, stop - start)
+            for ray in range(start, stop):
+                out += struct.pack(
+                    "<HBB", int(min(0xFFFF, round(float(rise[band, ray]) * 100.0))),
+                    int(min(255, max(1, round(float(distance[band, ray]) / LAND_WIRE_NM)))),
+                    int(index[band, ray]))
+    wire = dict(rays=int(rays), bands=int(bands), data=base64.b64encode(bytes(out)).decode("ascii"))
+    _LAND_WIRE[id(land)] = (land, wire)
+    while len(_LAND_WIRE) > LAND_CACHE_MAX:
+        _LAND_WIRE.popitem(last=False)
+    return wire
+
+
+def land_shade(color, light: float):
+    """A day land colour in the light of the hour (0 night .. 1 day)."""
+    return blend(LAND_NIGHT, [int(channel) for channel in color],
+                 config.clamp(light * 1.25, 0.0, 1.0))
+
+
+# A drawn land column is at most this wide (px): in the narrow binocular or
+# periscope field the rays are spread, so heights and colours are blended
+# between them.
+LAND_COLUMN_PX = 6.0
+
+
+def _land_columns(land, band, line_of_sight, fov_deg, px_per_deg):
+    """Bearings across the field (deg, relative to the line of sight) and the
+    band's rise, range and day colour there, blended between the rays."""
+    rays = land.rise.shape[1]
+    step = 360.0 / rays
+    sub = max(1, int(math.ceil(step * px_per_deg / LAND_COLUMN_PX)))
     first = int(math.floor((line_of_sight - fov_deg / 2) / step)) - 1
     last = int(math.ceil((line_of_sight + fov_deg / 2) / step)) + 1
-    column = None
-    for index in range(first, last + 1):
-        d = float(distance[index % len(distance)])
-        bearing = index * step
-        px = rect.centerx + relative_offset(bearing, line_of_sight) * px_per_deg
-        if not math.isfinite(d) or d > visibility_nm:
-            column = None
-            continue
-        rise = math.degrees(math.atan2(float(height[index % len(distance)]),
-                                       max(d, 0.02) * 1852.0)) * px_per_deg
-        base = horizon + math.tan(tilt) * (px - rect.centerx)
-        top = base - max(2.0, rise)
-        fade = min(1.0, d / max(visibility_nm, 0.1))
-        color = blend(base_color, haze_color, 0.25 + 0.6 * fade)
-        if column is not None:
-            x0, top0, base0 = column
-            if px - x0 < rect.w:
-                pygame.draw.polygon(s, color, [(x0, top0), (px, top), (px, base + 1),
-                                               (x0, base0 + 1)])
-                if rim is not None:
-                    pygame.draw.line(s, blend(rim, haze_color, 0.3 + 0.6 * fade),
-                                     (x0, top0), (px, top), 1)
-        column = (px, top, base)
+    position = np.arange(first * sub, last * sub + 1) / sub
+    index = np.floor(position).astype(int)
+    t = (position - index)[:, None]
+    a, b = index % rays, (index + 1) % rays
+    rise, distance = land.rise[band], land.distance[band]
+    color = land.color[band].astype(float)
+    both = np.isfinite(rise[a]) & np.isfinite(rise[b])
+    near = np.where(t[:, 0] < 0.5, a, b)
+    with np.errstate(invalid="ignore"):
+        blended_rise = np.where(both, rise[a] * (1 - t[:, 0]) + rise[b] * t[:, 0], rise[near])
+        blended_distance = np.where(both, distance[a] * (1 - t[:, 0]) + distance[b] * t[:, 0],
+                                    distance[near])
+    blended_color = np.where(both[:, None], color[a] * (1 - t) + color[b] * t, color[near])
+    offset = (position * step - line_of_sight + 180.0) % 360.0 - 180.0
+    return (offset.tolist(), blended_rise.tolist(), blended_distance.tolist(),
+            blended_color.tolist())
+
+
+def _draw_land(s, rect, land, *, line_of_sight, fov_deg, horizon, tilt, light,
+               visibility_nm, haze_color, colors=None) -> None:
+    """The land bands far to near, each a run of polygons from the moving
+    sea horizon up to its crests; neighbouring columns of one colour share
+    one polygon."""
+    px_per_deg = rect.w / fov_deg
+    rim = None if colors is None else colors["rim"]
+    visibility = max(visibility_nm, 0.1)
+    for band in reversed(range(land.rise.shape[0])):
+        run, run_color, run_fade = [], None, 0.0
+        for off, a, d, day in zip(*_land_columns(land, band, line_of_sight, fov_deg,
+                                                 px_per_deg)):
+            px = rect.centerx + off * px_per_deg
+            if not math.isfinite(d) or d > visibility or not a == a:
+                _flush_land(s, run, run_color, rim, haze_color, run_fade)
+                run, run_color = [], None
+                continue
+            if run and px - run[-1][0] >= rect.w:
+                _flush_land(s, run, run_color, rim, haze_color, run_fade)
+                run = []
+            base = horizon + math.tan(tilt) * (px - rect.centerx)
+            point = (px, base - max(2.0, a * px_per_deg), base)
+            fade = min(1.0, d / visibility)
+            color = blend(land_shade(day, light), haze_color, LAND_HAZE_MIN + LAND_HAZE * fade * fade)
+            color = tuple(channel - channel % 3 for channel in color)
+            if run and color != run_color:
+                run.append(point)
+                _flush_land(s, run, run_color, rim, haze_color, run_fade)
+                run = [point]
+            else:
+                run.append(point)
+            run_color, run_fade = color, fade
+        _flush_land(s, run, run_color, rim, haze_color, run_fade)
+
+
+def _flush_land(s, run, color, rim, haze_color, fade) -> None:
+    if len(run) < 2 or color is None:
+        return
+    top = [(px, y) for px, y, _ in run]
+    pygame.draw.polygon(s, color, top + [(px, base + 1) for px, _, base in reversed(run)])
+    if rim is not None:
+        pygame.draw.lines(s, blend(rim, haze_color, 0.3 + 0.6 * fade), False, top, 1)
 
 
 def row_range(row) -> float:
@@ -312,7 +567,7 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
         haze_color = colors["haze"]
         if land is not None:
             _draw_land(s, rect, land, line_of_sight=line_of_sight, fov_deg=fov_deg,
-                       horizon=horizon, tilt=tilt, night=sky["light"] < 0.5,
+                       horizon=horizon, tilt=tilt, light=sky["light"],
                        visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
         silhouettes.set_glow(colors.get("glow", 0.0))
         draw_rows(afloat, colors)

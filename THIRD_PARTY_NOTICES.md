@@ -114,6 +114,15 @@ von `tools/build_real_ocean.py` am 2026-11-25):
 | NOAA NGDC ETOPO1 | 1-Bogenminuten-Relief (Ice Surface), ERDDAP-Datensatz `etopo180`; Daten der US-Regierung, frei nutz- und weitergebbar | jeder dritte Gitterpunkt, Mittel der Wasserpunkte um jeden Punkt eines 33-x-33-Rasters je Sektor; <https://coastwatch.pfeg.noaa.gov/erddap/griddap/etopo180> |
 | NOAA NCEI World Ocean Atlas 2023 | Temperatur, 1 Grad, Monatsmittel `decav` (`woa23_decav_tMMmn01.csv.gz`); Daten der US-Regierung, frei nutz- und weitergebbar | Oberflächentemperatur (Mittel) und Deckschichttiefe (Median, 0,5 Grad C unter der Oberfläche) je Sektor und Monat; <https://www.ncei.noaa.gov/products/world-ocean-atlas> |
 
+Seit 1.3.302 stammen die Landhöhen der Küsten und Berge auf dem Horizont aus
+`data/coastlines/real_relief.json.gz` (SHA-256
+`aeeb96bc62f0ea9fa3bce27806ae09f27f48de4f8d15b245c59e86cc1ef4041a`, erzeugt
+von `tools/build_real_relief.py` am 2026-11-26): NOAA NGDC ETOPO1 (ERDDAP-Datensatz
+`etopo180`, Daten der US-Regierung, frei nutz- und weitergebbar), jeder zweite
+Gitterpunkt (etwa 2 sm), nur Höhen über dem Meer, in Kacheln von 1 Grad um die
+128 Sektoren. Die Landfarben (Sand, Gras, Fels, Schnee) folgen dem Gelände von
+Tiefenkontakt (MIT-Lizenz, siehe oben).
+
 Bis zu drei erfundene Untiefen je Sektor liegen weiterhin auf dem Schelf.
 Ohne Eintrag (eigene Karten) bleibt die synthetische 17-x-17-Bathymetrie aus
 Küstenabstand, trigonometrischer Variation und einem Sektor-Seed. Sämtliche

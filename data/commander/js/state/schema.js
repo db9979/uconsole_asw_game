@@ -106,6 +106,15 @@ function lampTipsOk(tips) {
       boundedArray(tip.lines, 8) && tip.lines.every((line) => text(line, 240)) &&
       boundedArray(tip.keys, 8) && tip.keys.every((key) => text(key, 16)));
 }
+// The land in sight (src/ui/horizon.py land_wire): null, or rays and bands
+// with their runs of packed rays, base64 (at most six bytes a ray and band).
+function landOk(land) {
+  if (land === null) return true;
+  if (!exactKeys(land, ["rays", "bands", "data"]) || !Number.isInteger(land.rays) || !Number.isInteger(land.bands) ||
+      land.rays < 1 || land.rays > 720 || land.bands < 1 || land.bands > 4 || typeof land.data !== "string") return false;
+  return land.data.length <= 4 * Math.ceil(land.bands * (2 + land.rays * 8) / 3) && land.data.length % 4 === 0 &&
+    /^[A-Za-z0-9+/]*={0,2}$/.test(land.data);
+}
 export function validateV2State(state) {
   const status = ["protocol", "version", "session", "epoch", "revision", "seq", "phase", "role", "chart_revision"];
   if (!state || state.protocol !== 2 || typeof state.version !== "string" ||
@@ -157,14 +166,14 @@ export function validateV2State(state) {
     eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects", "compartments"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment", "rescue"],
-    lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
+    lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events", "land"],
     opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets", "trails"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks", "can_request_ras", "can_contact_report", "can_request_support", "report"],
     sonar: ["observations", "settings", "visualization"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
-    uboot_lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
+    uboot_lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events", "land"],
     uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_radio: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_sonar: ["observations", "settings", "visualization"],
@@ -215,12 +224,12 @@ export function validateV2State(state) {
   };
   const sightFields = {
     sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing", "glow", "storm", "lightning", "lightning_bearing"],
-    glasses: ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "events"],
+    glasses: ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "events", "land"],
     outline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "way", "range_nm"],
     classes: ["warship", "merchant", "aircraft", "torpedo", "unknown"],
     event: ["type", "bearing", "range_nm", "age_s", "dur_s", "size_m", "level"],
     eventKinds: ["column", "blast", "fire", "sinking"],
-    phone: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
+    phone: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events", "land"],
     phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "way", "range_nm", "called"],
     call: ["seq", "age_s", "category", "bearing", "range_nm", "confirmed"],
     callCategories: ["contact", "ship", "warship", "merchant", "aircraft", "submarine", "torpedo"],
@@ -316,6 +325,7 @@ export function validateV2State(state) {
     finite(row.dur_s) && row.dur_s > 0 && finite(row.size_m) && row.size_m > 0 &&
     finite(row.level) && row.level >= 0 && row.level <= 1);
   const glassesOk = (glasses) => exactKeys(glasses, sightFields.glasses) && skyOk(glasses.sky) && sightEventsOk(glasses.events) &&
+    landOk(glasses.land) &&
     ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll"].every((key) => finite(glasses[key])) &&
     glasses.fov_deg > 0 && glasses.fov_deg <= 180 &&
     boundedArray(glasses.outlines, 16) && glasses.outlines.every((row) => exactKeys(row, sightFields.outline) &&
@@ -342,6 +352,7 @@ export function validateV2State(state) {
     finite(crew.casualties.reassign_in_s) && crew.casualties.reassign_in_s >= 0;
   // A phone lookout: its eyepiece, what its eye has (called or not) and its calls.
   const phoneOk = (view) => exactKeys(view, sightFields.phone) && skyOk(view.sky) && sightEventsOk(view.events) &&
+    landOk(view.land) &&
     view.side === (state.role === "lookout" ? "frigate" : "boat") &&
     ["available", "manned"].every((key) => typeof view[key] === "boolean") &&
     ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"].every((key) => finite(view[key])) &&
@@ -504,8 +515,8 @@ export function validateV2State(state) {
     // The periscope: line of sight, light and the crew's own sightings (no target truth).
     const scope = payload.scope;
     const scopeNumbers = ["relative_deg", "bearing", "course", "speed_kn", "fov_deg", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"];
-    if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sky", "sightings", "events"]) || !skyOk(scope.sky) ||
-        !sightEventsOk(scope.events) ||
+    if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sky", "sightings", "events", "land"]) || !skyOk(scope.sky) ||
+        !sightEventsOk(scope.events) || !landOk(scope.land) ||
         typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
         scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
         !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>

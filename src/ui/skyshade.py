@@ -58,8 +58,9 @@ _CACHE_MAX = 6
 
 
 def elevation(fraction):
-    """Degrees above the horizon of a height ``fraction`` of the sky."""
-    return np.asarray(fraction, dtype=float) / FRACTION_PER_DEG
+    """Degrees above the horizon of a height ``fraction`` of the sky; an
+    optic tilted far up looks at the zenith, not past it."""
+    return np.clip(np.asarray(fraction, dtype=float) / FRACTION_PER_DEG, -90.0, 90.0)
 
 
 def _mix(a, b, t):

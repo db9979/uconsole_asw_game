@@ -152,3 +152,12 @@ def test_the_browser_shades_the_same_sky_and_rain():
     for (_, _, expected), values in zip(cases, got["out"]):
         assert np.abs(np.array(values) - expected).max() < 1e-9
     assert np.allclose(got["rain"], sight_scene.rain_streaks(400, 200, 0.7, 0.3, 12.3))
+
+
+def test_an_optic_tilted_far_up_sees_the_zenith_not_the_haze():
+    assert skyshade.elevation(5.0) == 90.0 and skyshade.elevation(-5.0) == -90.0
+    sky = sight_scene.sky_values(12.0, 10.0, 0.8, 0.0, "none", 0.0, 230.0)
+    surface = _picture("normal", sky, elevation_deg=40.0)
+    colors = sight_scene.palette(sky, 0.0)
+    top = pygame.surfarray.array3d(surface)[40:360, 40:80].reshape(-1, 3).mean(axis=0)
+    assert np.abs(top - colors["sky"][0]).max() < np.abs(top - colors["haze"]).max()

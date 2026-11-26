@@ -20,7 +20,9 @@ const mod = (x, m) => ((x % m) + m) % m;
 const lerp = (a, b, t) => a + (b - a) * t;
 const unit = (bearing, alt) => [Math.sin(bearing * RAD) * Math.cos(alt * RAD), Math.cos(bearing * RAD) * Math.cos(alt * RAD), Math.sin(alt * RAD)];
 
-export const elevation = (fraction) => fraction / FRACTION_PER_DEG;
+// Degrees above the horizon of a height ``fraction`` of the sky; an optic
+// tilted far up looks at the zenith, not past it.
+export const elevation = (fraction) => clamp(fraction / FRACTION_PER_DEG, -90, 90);
 
 // ``colors`` as sight-scene.js palette (sky [top, horizon], haze), 0..255.
 export function skyParams(sky, colors, {sunEl, moonEl, visibility, ownE, ownN, t}) {

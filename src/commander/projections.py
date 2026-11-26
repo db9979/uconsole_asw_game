@@ -1707,7 +1707,14 @@ def _lookout_glasses(game):
                           for bearing, span, cls, stale, lights, elevation, aob, model, way,
                           range_nm in
                           eye_outlines(game, game.lookout_sightings())[:16]],
-                events=_sight_events(sight_events.frigate_rows(game), game.sim_t))
+                events=_sight_events(sight_events.frigate_rows(game), game.sim_t),
+                land=horizon.land_wire(_lookout_land(game)))
+
+
+def _lookout_land(game):
+    """The land the bridge lookout sees (``src/ui/stations/bridge.py``)."""
+    from src.ui.stations.bridge import _lookout_land as land
+    return land(game)
 
 
 def _uboot_scope(game, boat):
@@ -1748,7 +1755,15 @@ def _uboot_scope(game, boat):
                         way=(None if now - row["t"] > 1.0
                              else _number(getattr(boat.orders, "_way", {}).get(row["ref"]))))
                    for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]],
-        events=_sight_events(sight_events.boat_rows(game, boat), now))
+        events=_sight_events(sight_events.boat_rows(game, boat), now),
+        land=_scope_land(game, boat))
+
+
+def _scope_land(game, boat):
+    """The land in the periscope (known geography, as on the uConsole)."""
+    from src.ui import horizon
+    return horizon.land_wire(horizon.land_view(game.world, boat.sub.x, boat.sub.y,
+                                               opfor.eye_height_m(boat)))
 
 
 def _uboot_solution(boat, ref, now):

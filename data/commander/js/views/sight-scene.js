@@ -2,7 +2,7 @@
 // the same picture as src/ui/sight_scene.py and src/ui/horizon.py on the
 // uConsole.  Sky, stars, sun or moon, clouds, the sea in motion, silhouettes
 // in steel with a lit rim, rain, snow or fog, the bearing scale and the
-// corner brackets.  Display only: every value comes from the detached state
+// corner brackets, the land in sight.  Display only: every value comes from the detached state
 // (the view's ``sky`` block and outlines); the phase is the wall clock.
 import { drawInScene } from "./model-view.js";
 import { DETAIL_MIN_PX, FOAM, NAV_LIGHT, PROFILES } from "./silhouette-profiles.js";
@@ -200,6 +200,78 @@ export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, l
     }
   }
   if (typeof nav === "string") drawNavLights(g, cls, frame, width, nav, t);
+}
+
+// --- the land (src/ui/horizon.py: land_wire, _land_columns, _draw_land) -----
+const LAND_NIGHT = [8, 20, 26], LAND_HAZE_MIN = .06, LAND_HAZE = .8, LAND_COLUMN_PX = 6;
+let landCache = null;
+// The packed land: per band (near to far) and ray the rise above the sea
+// horizon (deg, NaN none), the crest's range (NM) and its day colour.
+export function decodeLand(land) {
+  if (!land || typeof land.data !== "string") return null;
+  if (landCache?.data === land.data) return landCache.value;
+  const bytes = Uint8Array.from(atob(land.data), (ch) => ch.charCodeAt(0));
+  const {bands, rays} = land;
+  if (!(bands > 0 && rays > 0) || bytes.length !== bands * rays * 6) return null;
+  const value = Array.from({length: bands}, (_, band) => {
+    const rise = new Float32Array(rays), range = new Float32Array(rays), color = [];
+    for (let ray = 0; ray < rays; ray++) {
+      const at = (band * rays + ray) * 6, centi = bytes[at] | (bytes[at + 1] << 8);
+      rise[ray] = centi === 0xFFFF ? NaN : centi / 100;
+      range[ray] = bytes[at + 2] ? bytes[at + 2] * .25 : Infinity;
+      color.push([bytes[at + 3], bytes[at + 4], bytes[at + 5]]);
+    }
+    return {rise, range, color};
+  });
+  landCache = {data: land.data, value: {rays, bands: value}};
+  return landCache.value;
+}
+
+// The land bands far to near, each a run of polygons from the moving sea
+// horizon up to its crests; in a narrow field heights and colours blend
+// between the rays.
+function drawLand(g, w, v, colors, light) {
+  const land = decodeLand(v.land);
+  if (!land) return;
+  const step = 360 / land.rays, sub = Math.max(1, Math.ceil(step * w.pxPerDeg / LAND_COLUMN_PX));
+  const first = Math.floor((v.bearing - v.fov_deg / 2) / step) - 1, last = Math.ceil((v.bearing + v.fov_deg / 2) / step) + 1;
+  const visibility = Math.max(Number(v.visibility_nm) || 0, .1), lit = clamp(light * 1.25);
+  const flush = (run, color, fade) => {
+    if (run.length < 2 || !color) return;
+    g.fillStyle = rgb(color); g.beginPath();
+    run.forEach(([x, top], index) => (index ? g.lineTo(x, top) : g.moveTo(x, top)));
+    for (let index = run.length - 1; index >= 0; index--) g.lineTo(run[index][0], run[index][2] + 1);
+    g.closePath(); g.fill();
+    g.strokeStyle = rgb(mix(colors.rim, colors.haze, .3 + .6 * fade)); g.lineWidth = 1; g.beginPath();
+    run.forEach(([x, top], index) => (index ? g.lineTo(x, top) : g.moveTo(x, top)));
+    g.stroke();
+  };
+  for (let band = land.bands.length - 1; band >= 0; band--) {
+    const {rise, range, color: day} = land.bands[band];
+    let run = [], runColor = null, runFade = 0;
+    for (let k = first * sub; k <= last * sub; k++) {
+      const position = k / sub, index = Math.floor(position), t = position - index;
+      const a = ((index % land.rays) + land.rays) % land.rays, b = (a + 1) % land.rays;
+      const both = Number.isFinite(rise[a]) && Number.isFinite(rise[b]), near = t < .5 ? a : b;
+      const r = both ? rise[a] * (1 - t) + rise[b] * t : rise[near];
+      const d = both ? range[a] * (1 - t) + range[b] * t : range[near];
+      const x = w.width / 2 + wrap(position * step - v.bearing) * w.pxPerDeg;
+      if (!Number.isFinite(d) || d > visibility || !Number.isFinite(r)) {
+        flush(run, runColor, runFade); run = []; runColor = null; continue;
+      }
+      if (run.length && x - run[run.length - 1][0] >= w.width) { flush(run, runColor, runFade); run = []; }
+      const base = w.base(x), point = [x, base - Math.max(2, r * w.pxPerDeg), base];
+      const fade = Math.min(1, d / visibility);
+      const dayColor = both ? day[a].map((c, i) => c * (1 - t) + day[b][i] * t) : day[near];
+      const shade = LAND_NIGHT.map((c, i) => Math.trunc(c + (Math.trunc(dayColor[i]) - c) * lit));
+      const color = mix(shade, colors.haze, LAND_HAZE_MIN + LAND_HAZE * fade * fade).map((c) => c - (c % 3));
+      if (run.length && String(color) !== String(runColor)) {
+        run.push(point); flush(run, runColor, runFade); run = [point];
+      } else run.push(point);
+      runColor = color; runFade = fade;
+    }
+    flush(run, runColor, runFade);
+  }
 }
 
 // --- the picture ------------------------------------------------------------
@@ -701,6 +773,7 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   const airborne = v.outlines.filter(high);
   drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
   drawSea(g, w, sky, colors, v.sea_state, t, haze, v.way ?? null);
+  drawLand(g, w, v, colors, sky.light);
   foamGlow = colors.glow;
   // Back to front: the farthest first, so a nearer ship hides a farther one.
   drawRows(v.outlines.filter((row) => !high(row)).sort((a, b) => (rowRange(a) === rowRange(b) ? 0 : rowRange(b) - rowRange(a))));

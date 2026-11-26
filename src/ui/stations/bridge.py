@@ -516,7 +516,7 @@ def draw_lookout_glasses(game) -> None:
     # All-round panorama: the bow in the middle; each sighting as a tick at
     # its measured bearing, the binoculars' field as a frame.
     pygame.draw.rect(s, config.COLOR_GEO_BG, panorama)
-    distance = land[0]
+    distance = horizon.land_nearest(land).tolist()
     step = 360.0 / len(distance)
     for index, value in enumerate(distance):
         # The coast in sight, as a band along the foot of the panorama.

@@ -10,19 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.301**
+Aktuelle Version: **1.3.302**
 
-Version 1.3.301 holt die Schiffe aus Tiefenkontakt, dem U-Boot-Spiel im
-Browser, in Fernglas, Sehrohr und Kontaktanalyse. Korvetten, Fregatten und
-Zerstörer bis 160 m, Containerschiffe, Tanker, Massengutfrachter,
-Kühlschiffe, RoRo-Schiffe, Stückgutfrachter, Fähren, Schlepper, Trawler und
-alle U-Boot-Typen erscheinen jetzt als detaillierte Modelle mit Masten,
-Kränen, Containern, Booten und Geschützen, gestreckt auf Breite und Tiefgang
-ihres echten Typs; Träger, Kreuzer, große Zerstörer, Kreuzfahrtschiffe und
-Hilfsschiffe behalten ihre eigenen Modelle. Bei Tag zeigen die Schiffe ihren
-Anstrich, bei Nacht und im Dunst verblassen sie wie bisher zum dunklen
-Umriss. Auf der uConsole wird ein detailliertes Modell beim ersten Anblick im
-Hintergrund vorbereitet (solange zeigt sich der Umriss). Spielstände bleiben v53.
+Version 1.3.302 stellt die echten Küsten und Berge auf den Horizont, im Look
+von Tiefenkontakt. Fernglas, Ausguckstreifen und Sehrohr zeigen jetzt das Land
+aller 128 Seegebiete in seiner echten Höhe (NOAA ETOPO1): vorn die Küste,
+dahinter die Bergketten in blasseren, dunstigeren Reihen, bis die Erdkrümmung
+sie verdeckt (ein Gebirge von 1000 m ab etwa 40 sm). Das Land ist nach Höhe
+und Steilheit gefärbt, Sand an der Wasserlinie, grüne Hügel, grauer Fels und
+Schnee oberhalb der Schneegrenze der Breite des Seegebiets, und verblasst in
+der Dämmerung und im Dunst. Fernglas und Sehrohr im Browser zeigen dasselbe
+Land. Eigene Karten behalten die angenommene Küste. Spielstände bleiben v53.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

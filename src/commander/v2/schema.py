@@ -93,9 +93,11 @@ SKY_FIELDS = ("light", "dusk", "cloud", "precipitation", "intensity", "wind_from
               "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg",
               "moon_illumination", "moon_waxing", "glow", "storm", "lightning",
               "lightning_bearing")
+# ``land``: the land in sight (``src/ui/horizon.py`` ``land_wire``: rays,
+# bands, base64 of rise, range and colour per band and ray) or null.
 LOOKOUT_GLASSES_FIELDS = ("course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset",
                           "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines",
-                          "events")
+                          "events", "land")
 # ``lights``: the navigation lights made out (``src/sensors/nav_lights.py``
 # code) or null; ``elevation_deg``: an aircraft's angle above the sea
 # horizon (null on the surface); ``aob_deg``: the angle on the bow judged
@@ -115,7 +117,7 @@ SIGHT_EVENT_KINDS = ("column", "blast", "fire", "sinking")
 LOOKOUT_PHONE_FIELDS = ("side", "available", "manned", "course", "speed_kn", "relative_deg",
                         "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset",
                         "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines",
-                        "calls", "events")
+                        "calls", "events", "land")
 LOOKOUT_PHONE_OUTLINE_FIELDS = LOOKOUT_OUTLINE_FIELDS + ("called",)
 LOOKOUT_CALL_FIELDS = ("seq", "age_s", "category", "bearing", "range_nm", "confirmed")
 LOOKOUT_CALL_CATEGORIES = ("contact", "ship", "warship", "merchant", "aircraft", "submarine",

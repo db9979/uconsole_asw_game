@@ -32,7 +32,7 @@ LOOKOUT = dict(course=90.0, speed_kn=12.0, fov_deg=16.0, visibility_nm=30.0, sea
                         wind_from_deg=270.0, sun_bearing=300.0, sun_alt_deg=-20.0,
                         moon_bearing=180.0, moon_alt_deg=30.0, moon_illumination=0.8,
                         moon_waxing=True, glow=0.0, storm=0.0, lightning=0.0,
-                        lightning_bearing=0.0), events=[])
+                        lightning_bearing=0.0), events=[], land=None)
 
 def _projected(name):
     """A block exactly as the host projects it for a fresh game."""

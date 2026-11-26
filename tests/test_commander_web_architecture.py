@@ -9,6 +9,9 @@ IMPORT = re.compile(r'^import (?:\{[^}]*\} from )?"([^"]+)";', re.M)
 WORKER = re.compile(r'new Worker\(new URL\("([^"]+)", import\.meta\.url\)')
 # Modules loaded on first use (the 3D model variants).
 DYNAMIC = re.compile(r'import\("(\./[^"]+)"\)')
+# A folder of modules picked by name on first use (the Tiefenkontakt designs,
+# ``import(`./tk/${name}.js`)``): every module in that folder counts.
+DYNAMIC_DIR = re.compile(r'import\(`(\./[^`$]+/)\$\{[^}]+\}\.js`\)')
 
 
 def _imports(path):
@@ -48,6 +51,9 @@ def test_every_module_is_reachable_from_the_entry_point():
         stack.extend((JS / name).parent.joinpath(target).resolve().relative_to(JS.resolve()).as_posix()
                      for target in WORKER.findall((JS / name).read_text(encoding="utf-8"))
                      + DYNAMIC.findall((JS / name).read_text(encoding="utf-8")))
+        for folder in DYNAMIC_DIR.findall((JS / name).read_text(encoding="utf-8")):
+            stack.extend(path.resolve().relative_to(JS.resolve()).as_posix()
+                         for path in sorted((JS / name).parent.joinpath(folder).glob("*.js")))
     assert seen == {path.relative_to(JS).as_posix() for path in JS.rglob("*.js")}
 
 

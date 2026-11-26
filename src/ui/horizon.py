@@ -10,6 +10,7 @@ entity.
 import base64
 from collections import OrderedDict
 import math
+import struct
 from typing import NamedTuple
 
 import numpy as np
@@ -98,11 +99,14 @@ def _coast_segments(world, x, y, reach_nm):
     coast = getattr(world, "coast", None)
     rows = []
     for mass in getattr(coast, "landmasses", ()):
-        left, top, right, bottom = mass.bounds
+        points = np.asarray(getattr(mass, "points", ()), dtype=float).reshape(-1, 2)
+        if len(points) < 2:
+            continue
+        left, top = points.min(axis=0)
+        right, bottom = points.max(axis=0)
         if right < x - reach_nm or left > x + reach_nm or bottom < y - reach_nm \
                 or top > y + reach_nm:
             continue
-        points = np.asarray(mass.points, dtype=float)
         rows.append(np.hstack((points, np.roll(points, -1, axis=0))))
     if not rows:
         return np.zeros((0, 4))
@@ -263,12 +267,23 @@ def land_nearest(land: LandView) -> np.ndarray:
     return np.where(seen, land.distance, np.inf).min(axis=0)
 
 
-# The land for the browser: every ``LAND_WIRE_STRIDE``-th ray, per band and
-# ray the rise (0.01 deg, 0xFFFF none), the range (``LAND_WIRE_NM`` steps)
-# and the day colour, six bytes, base64.
+# The land for the browser: every ``LAND_WIRE_STRIDE``-th ray; per band the
+# runs of rays that show land (u16 start, u16 count), per ray the rise
+# (u16, 0.01 deg), the range (u8, ``LAND_WIRE_NM`` steps) and the colour as an
+# index into ``land_palette`` (u8); little-endian, base64.
 LAND_WIRE_STRIDE = 2
 LAND_WIRE_NM = 0.25
+LAND_PALETTE_STEPS = 32
 _LAND_WIRE = OrderedDict()
+
+
+def land_palette() -> np.ndarray:
+    """The land colours the browser gets (``sight-scene.js`` builds the same):
+    sand, grass to rock in ``LAND_PALETTE_STEPS`` steps, snow to rock."""
+    t = np.linspace(0.0, 1.0, LAND_PALETTE_STEPS)[:, None]
+    grass, rock, snow = (np.array(c, float) for c in (LAND_GRASS, LAND_ROCK, LAND_SNOW))
+    rows = np.vstack(([LAND_SAND], grass + (rock - grass) * t, snow + (rock - snow) * t))
+    return np.round(rows).astype(np.uint8)
 
 
 def land_wire(land: LandView | None) -> dict | None:
@@ -281,19 +296,24 @@ def land_wire(land: LandView | None) -> dict | None:
         return cached[1]
     rise = land.rise[:, ::LAND_WIRE_STRIDE]
     distance = land.distance[:, ::LAND_WIRE_STRIDE]
-    color = land.color[:, ::LAND_WIRE_STRIDE]
+    palette = land_palette().astype(int)
+    color = land.color[:, ::LAND_WIRE_STRIDE].astype(int)
+    index = ((color[..., None, :] - palette) ** 2).sum(axis=-1).argmin(axis=-1)
     bands, rays = rise.shape
-    packed = np.zeros((bands, rays, 6), dtype=np.uint8)
-    seen = np.isfinite(rise) & np.isfinite(distance)
-    centi = np.where(seen, np.clip(np.round(np.nan_to_num(rise) * 100.0), 0, 0xFFFE),
-                     0xFFFF).astype(np.uint16)
-    packed[..., 0] = centi & 0xFF
-    packed[..., 1] = centi >> 8
-    packed[..., 2] = np.where(seen, np.clip(np.round(np.nan_to_num(distance, posinf=0.0)
-                                                     / LAND_WIRE_NM), 1, 255), 0)
-    packed[..., 3:] = color
-    wire = dict(rays=int(rays), bands=int(bands),
-                data=base64.b64encode(packed.tobytes()).decode("ascii"))
+    out = bytearray()
+    for band in range(bands):
+        seen = np.isfinite(rise[band]) & np.isfinite(distance[band])
+        edges = np.flatnonzero(np.diff(np.concatenate(([0], seen.astype(np.int8), [0]))))
+        runs = list(zip(edges[::2].tolist(), edges[1::2].tolist()))
+        out += struct.pack("<H", len(runs))
+        for start, stop in runs:
+            out += struct.pack("<HH", start, stop - start)
+            for ray in range(start, stop):
+                out += struct.pack(
+                    "<HBB", int(min(0xFFFF, round(float(rise[band, ray]) * 100.0))),
+                    int(min(255, max(1, round(float(distance[band, ray]) / LAND_WIRE_NM)))),
+                    int(index[band, ray]))
+    wire = dict(rays=int(rays), bands=int(bands), data=base64.b64encode(bytes(out)).decode("ascii"))
     _LAND_WIRE[id(land)] = (land, wire)
     while len(_LAND_WIRE) > LAND_CACHE_MAX:
         _LAND_WIRE.popitem(last=False)

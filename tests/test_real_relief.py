@@ -133,7 +133,8 @@ def test_the_browser_reads_the_packed_land():
     assert wire is horizon.land_wire(land)   # cached per land view
     assert set(wire) == {"rays", "bands", "data"}
     assert wire["rays"] == horizon.LAND_RAYS // horizon.LAND_WIRE_STRIDE
-    assert len(json.dumps(wire)) < 12_000
+    # Only the rays with land travel: a few kB per state.
+    assert len(json.dumps(wire)) < 6_000
     assert horizon.land_wire(None) is None
     node = shutil.which("node")
     if node is None:
@@ -141,25 +142,30 @@ def test_the_browser_reads_the_packed_land():
     script = (
         "const m = await import('./data/commander/js/views/sight-scene.js');"
         f"const land = m.decodeLand({json.dumps(wire)});"
-        "console.log(JSON.stringify(land.bands.map((b) => ({"
+        "console.log(JSON.stringify({palette: m.LAND_PALETTE, bands: land.bands.map((b) => ({"
         "rise: Array.from(b.rise, (v) => Number.isNaN(v) ? null : v),"
         "range: Array.from(b.range, (v) => Number.isFinite(v) ? v : null),"
-        "color: b.color}))));")
+        "color: b.color}))}));")
     result = subprocess.run([node, "--input-type=module", "-e", script], cwd=ROOT,
                             capture_output=True, text=True, timeout=60, check=True)
-    bands = json.loads(result.stdout)
+    decoded = json.loads(result.stdout)
+    palette = horizon.land_palette()
+    assert decoded["palette"] == palette.tolist()
     stride = horizon.LAND_WIRE_STRIDE
-    for band, decoded in enumerate(bands):
+    for band, row in enumerate(decoded["bands"]):
         rise = land.rise[band, ::stride]
         seen = np.isfinite(rise)
-        assert [value is not None for value in decoded["rise"]] == seen.tolist()
-        got = np.array([value for value in decoded["rise"] if value is not None])
+        assert [value is not None for value in row["rise"]] == seen.tolist()
+        got = np.array([value for value in row["rise"] if value is not None])
         assert np.allclose(got, rise[seen], atol=0.006)
-        far = np.array([value for value in decoded["range"] if value is not None])
+        far = np.array([value for value in row["range"] if value is not None])
         assert np.allclose(far, land.distance[band, ::stride][seen],
                            atol=horizon.LAND_WIRE_NM / 2 + 1e-6)
-        colors = np.array(decoded["color"])[seen]
-        assert (colors == land.color[band, ::stride][seen]).all()
+        # Each colour travels as the nearest palette colour.
+        sent = land.color[band, ::stride][seen].astype(int)
+        nearest = palette[((sent[:, None, :] - palette.astype(int)) ** 2).sum(-1).argmin(-1)]
+        assert (np.array(row["color"])[seen] == nearest).all()
+        assert not seen.any() or np.abs(nearest.astype(int) - sent).max() < 30
 
 
 def test_the_build_tool_covers_every_sector_tile():

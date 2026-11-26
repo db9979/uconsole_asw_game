@@ -205,6 +205,19 @@ export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, l
 // --- the land (src/ui/horizon.py: land_wire, _land_columns, _draw_land) -----
 const LAND_NIGHT = [8, 20, 26], LAND_HAZE_MIN = .06, LAND_HAZE = .8, LAND_COLUMN_PX = 6;
 let landCache = null;
+// src/ui/horizon.py: the land colours (sand, grass, rock, snow) and the palette
+// the packed land indexes (land_palette).
+const LAND_SAND = [138, 132, 112], LAND_GRASS = [77, 90, 68], LAND_ROCK = [95, 95, 90], LAND_SNOW = [217, 220, 220];
+const LAND_PALETTE_STEPS = 32;
+const roundHalfEven = (value) => {
+  const floor = Math.floor(value), rest = value - floor;
+  return rest > .5 || (rest === .5 && floor % 2) ? floor + 1 : floor;
+};
+export const LAND_PALETTE = (() => {
+  const steps = Array.from({length: LAND_PALETTE_STEPS}, (_, k) => k / (LAND_PALETTE_STEPS - 1));
+  const lerp = (a, b, t) => a.map((value, index) => roundHalfEven(value + (b[index] - value) * t));
+  return [LAND_SAND, ...steps.map((t) => lerp(LAND_GRASS, LAND_ROCK, t)), ...steps.map((t) => lerp(LAND_SNOW, LAND_ROCK, t))];
+})();
 // The packed land: per band (near to far) and ray the rise above the sea
 // horizon (deg, NaN none), the crest's range (NM) and its day colour.
 export function decodeLand(land) {
@@ -212,17 +225,25 @@ export function decodeLand(land) {
   if (landCache?.data === land.data) return landCache.value;
   const bytes = Uint8Array.from(atob(land.data), (ch) => ch.charCodeAt(0));
   const {bands, rays} = land;
-  if (!(bands > 0 && rays > 0) || bytes.length !== bands * rays * 6) return null;
-  const value = Array.from({length: bands}, (_, band) => {
-    const rise = new Float32Array(rays), range = new Float32Array(rays), color = [];
-    for (let ray = 0; ray < rays; ray++) {
-      const at = (band * rays + ray) * 6, centi = bytes[at] | (bytes[at + 1] << 8);
-      rise[ray] = centi === 0xFFFF ? NaN : centi / 100;
-      range[ray] = bytes[at + 2] ? bytes[at + 2] * .25 : Infinity;
-      color.push([bytes[at + 3], bytes[at + 4], bytes[at + 5]]);
+  const u16 = (at) => bytes[at] | (bytes[at + 1] << 8);
+  let at = 0;
+  const value = [];
+  for (let band = 0; band < bands; band++) {
+    const rise = new Float32Array(rays).fill(NaN), range = new Float32Array(rays).fill(Infinity);
+    const color = Array.from({length: rays}, () => LAND_ROCK);
+    if (at + 2 > bytes.length) return null;
+    const runs = u16(at); at += 2;
+    for (let run = 0; run < runs; run++) {
+      if (at + 4 > bytes.length) return null;
+      const start = u16(at), count = u16(at + 2); at += 4;
+      if (start + count > rays || at + count * 4 > bytes.length) return null;
+      for (let ray = start; ray < start + count; ray++, at += 4) {
+        rise[ray] = u16(at) / 100; range[ray] = bytes[at + 2] * .25;
+        color[ray] = LAND_PALETTE[bytes[at + 3]] ?? LAND_ROCK;
+      }
     }
-    return {rise, range, color};
-  });
+    value.push({rise, range, color});
+  }
   landCache = {data: land.data, value: {rays, bands: value}};
   return landCache.value;
 }

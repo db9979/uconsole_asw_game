@@ -4,6 +4,10 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.301
+
+Version 1.3.301 holt die Schiffe aus Tiefenkontakt, dem U-Boot-Spiel im Browser, in Fernglas, Sehrohr und Kontaktanalyse. Korvetten, Fregatten und Zerstörer bis 160 m, Containerschiffe, Tanker, Massengutfrachter, Kühlschiffe, RoRo-Schiffe, Stückgutfrachter, Fähren, Schlepper, Trawler und alle U-Boot-Typen erscheinen jetzt als detaillierte Modelle mit Masten, Kränen, Containern, Booten und Geschützen, gestreckt auf Breite und Tiefgang ihres echten Typs; Träger, Kreuzer, große Zerstörer, Kreuzfahrtschiffe und Hilfsschiffe behalten ihre eigenen Modelle. Bei Tag zeigen die Schiffe ihren Anstrich, bei Nacht und im Dunst verblassen sie wie bisher zum dunklen Umriss. Auf der uConsole wird ein detailliertes Modell beim ersten Anblick im Hintergrund vorbereitet (solange zeigt sich der Umriss). Spielstände bleiben v53.
+
 ## 1.3.300
 
 Die Sonar-Audioüberwachung unterscheidet eine Lücke durch die eigene Uhr des Mixers (ein ausgebremster Sound-Thread fällt zurück und spielt das Wartende dann schneller als in Echtzeit, wie auf einem ausgelasteten Testrechner) von einer Lücke durch die Sonarpumpe, und die Audio-Dauerprüfung nennt den Zeitpunkt einer gezählten Lücke. Hörbar ändert sich nichts. Diese Version bringt auch 1.3.299 (der echte Ozean, unten), die nicht einzeln erschien.

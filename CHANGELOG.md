@@ -4,6 +4,10 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.301
+
+Release 1.3.301 brings the ships of Tiefenkontakt, the browser submarine game, into the binoculars, the periscope and the contact analyzer. Corvettes, frigates and destroyers up to 160 m, container ships, tankers, bulk carriers, reefers, RoRo ships, general cargo ships, ferries, tugs, trawlers and every submarine type now show as detailed models with masts, cranes, containers, boats and guns, stretched to the real beam and draught of their type; carriers, cruisers, big destroyers, cruise ships and auxiliaries keep their own models. By day the ships show their paint; at night and in haze they fade to the dark outline as before. On the uConsole a detailed model is prepared in the background on first sight (the outline shows meanwhile). Saves stay v53.
+
 ## 1.3.300
 
 The sonar audio watchdog tells a gap caused by the mixer's own clock (a starved sound thread that falls behind and then plays the queued audio faster than real time, as on a busy test machine) apart from a gap the sonar pump caused, and the audio soak check says when a counted gap happened. What you hear is unchanged. This release also brings 1.3.299 (the real ocean, below), which did not ship on its own.

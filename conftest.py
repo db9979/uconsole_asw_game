@@ -88,6 +88,10 @@ def isolated_saves(tmp_path, monkeypatch):
     # The default graphics level follows the platform ("full" on Windows);
     # tests run against the uConsole default on every runner.
     monkeypatch.setattr(preferences_module, "_default_graphics", lambda: "normal")
+    # Model partitions are built at once in tests (the game builds the
+    # detailed ones in the background; tests/test_tk_models.py checks that).
+    from src.ui import model_bsp
+    monkeypatch.setattr(model_bsp, "BACKGROUND", False)
     return saves
 
 

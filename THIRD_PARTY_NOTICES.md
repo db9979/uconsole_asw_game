@@ -25,6 +25,12 @@ zu prüfen und beizubehalten.
 - Sonar-, Maschinen- und Alarmklänge werden zur Laufzeit algorithmisch aus
   NumPy-Signalen synthetisiert. Anzeigen und Symbole werden durch Projektcode
   gezeichnet; es werden keine vorgerenderten Medien ausgeliefert.
+- `data/unit_models/tiefenkontakt.json.gz` und `data/commander/js/views/tk/*.js`
+  enthalten die vereinfachten Schiffs- und U-Boot-Modelle aus Tiefenkontakt
+  (<https://github.com/db9979/tiefenkontakt>, MIT-Lizenz, Copyright (c) 2026
+  db9979, derselbe Autor wie U-Jagd), erzeugt mit
+  `tools/tiefenkontakt/export_models.mts` und `tools/build_tk_models.py`;
+  der verwendete Commit steht in der Datei.
 - `data/contacts/*.json` enthält für das Spiel erstellte Modellprofile. Namen
   realer oder realistisch anmutender Plattformklassen bezeichnen keine
   Übernahme geschützter Herstellerdaten und keine technische Verifikation.

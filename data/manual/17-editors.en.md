@@ -30,7 +30,7 @@ In the Remote Crew solo mode, "Own missions" in the browser's host bar lists the
 
 ![Contact analyser (F8)](figure:contact-analyzer)
 
-Unit analyser (`F8`, main menu) and Unit Editor: the first page of every catalog profile in the analyser is a schematic 3D model of its type (tab `3D`, then the sound and radar images with `Left`/`Right`); it turns slowly, and in the Remote Crew browser it can also be turned by dragging. The Unit Editor shows the same model under the selected profile and beside the fields of an opened one.
+Unit analyser (`F8`, main menu) and Unit Editor: the first page of every catalog profile in the analyser is a 3D model of its type (for most ships and every submarine the detailed Tiefenkontakt design) (tab `3D`, then the sound and radar images with `Left`/`Right`); it turns slowly, and in the Remote Crew browser it can also be turned by dragging. The Unit Editor shows the same model under the selected profile and beside the fields of an opened one.
 
 Every ship, submarine and aircraft type of the catalog has its own model, built from the public main dimensions and general arrangement of the real class (Wikipedia; generic types such as a VLCC or a harbour tug use typical values): length, beam and draught, where bridge, masts, funnels, guns, missile cells, flight deck, cranes and cargo stand, the submarine's sail, planes, rudders and missile deck, the aircraft's wings, tail and engines. The same type always looks the same; unit-editor profiles and anything without a type of its own keep the model of their class (warship, merchant, small craft, submarine, the lookout's helicopter). Torpedoes, decoys, whales, fish schools and jellyfish have their own models.
 

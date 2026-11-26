@@ -18,7 +18,7 @@ import zlib
 # Bound at import: web tests redirect importlib.resources.files to a page copy.
 from importlib.resources import files as resource_files
 
-from src.ui import unit_models as um
+from src.ui import tk_models, unit_models as um
 
 VARIANTS_RESOURCE = ("data.unit_models", "variants.json")
 SHIP_LAYOUTS = ("warship", "carrier", "container", "tanker", "lng", "bulk", "roro",
@@ -370,6 +370,9 @@ def ship_nav(key: str) -> dict | None:
     spec = specs().get(key)
     if not spec or "layout" not in spec:
         return None
+    ref = tk_ref(key)
+    if ref is not None:
+        return tk_models.nav(ref)
     m = lambda metres: metres / spec["length_m"]  # noqa: E731
     masts = sorted(spec["masts"], key=lambda item: item["u"])
     blocks = spec["superstructure"] or ([spec["island"]] if spec["island"] else [])
@@ -512,6 +515,20 @@ def _aircraft(key: str, spec: dict) -> um.Mesh:
 _KINDS = {"ship": _ship, "sub": _sub, "aircraft": _aircraft}
 
 
+def tk_ref(key: str) -> dict | None:
+    """The Tiefenkontakt design type ``key`` is drawn as and its stretch
+    (``src/ui/tk_models.py``), None where our own model stays."""
+    spec = specs().get(key)
+    if spec is None:
+        return None
+    if key not in _TK_REFS:
+        _TK_REFS[key] = tk_models.variant_ref(key, spec)
+    return _TK_REFS[key]
+
+
+_TK_REFS: dict = {}
+
+
 def variant_mesh(key: str) -> um.Mesh | None:
     """The model of catalog type ``key``, built once; None without a spec."""
     spec = specs().get(key)
@@ -519,7 +536,10 @@ def variant_mesh(key: str) -> um.Mesh | None:
         return None
     mesh = _MESHES.get(key)
     if mesh is None:
-        mesh = _MESHES[key] = _KINDS[validate_spec(key, spec)](key, spec)
+        kind = validate_spec(key, spec)
+        ref = tk_ref(key)
+        mesh = _MESHES[key] = (tk_models.mesh(ref, kind == "ship") if ref is not None
+                               else _KINDS[kind](key, spec))
     return mesh
 
 

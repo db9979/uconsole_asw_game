@@ -17,7 +17,7 @@ import numpy as np
 import pygame
 import pytest
 
-from src.ui import model_bsp, unit_models as um, unit_variants as uv
+from src.ui import model_bsp, tk_models, unit_models as um, unit_variants as uv
 
 ROOT = Path(__file__).resolve().parents[1]
 W, H = 300, 200
@@ -165,7 +165,9 @@ def test_the_partition_orders_crossing_faces_and_splits_them():
 
 def test_partitions_are_built_once_and_quickly():
     import time
-    for key in ("sub_12", "cargo_02", "warship_05"):
+    # Our own models (the detailed Tiefenkontakt designs are built in the
+    # background: tests/test_tk_models.py).
+    for key in ("passenger_01", "tanker_14", "warship_28"):
         mesh = um.mesh_for(key)
         start = time.perf_counter()
         tree = model_bsp.tree_for(key, mesh)
@@ -178,11 +180,21 @@ def test_browser_builds_the_same_partition_in_real_chromium(tmp_path):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
     if not chromium:
         pytest.skip("Chromium is not installed")
-    keys = ("warship_05", "sub_12", "civil_transit")
+    # Our own models and two drawn as Tiefenkontakt designs (the browser
+    # stretches the design module as model-view.js does).
+    keys = ("warship_28", "passenger_01", "civil_transit", "warship_05", "sub_12")
     expected = {}
     for key in keys:
-        data = uv.variant_mesh(key).to_json()
-        verts = np.asarray(data["v"], dtype=float).reshape(-1, 3) / 1000
+        ref = uv.tk_ref(key)
+        data = uv.variant_mesh(key).to_json() if ref is None else \
+            tk_models.browser_model(ref["tk"])
+        verts = np.asarray(data["v"], dtype=float).reshape(-1, 3)
+        if ref is not None:
+            ky, kup, kdown, dz = ref["k"]
+            verts[:, 1] = verts[:, 1] * ky
+            z = verts[:, 2] + dz * 1000
+            verts[:, 2] = z * np.where(z > 0, kup, kdown)
+        verts = verts / 1000
         mesh = um.Mesh(verts, data["f"], ["hull"] * len(data["f"]), [False] * len(data["f"]),
                        [(a, c, "dark") for a, c, _m in data["l"]], data["w"])
         tree = model_bsp.Tree(mesh)
@@ -193,11 +205,13 @@ def test_browser_builds_the_same_partition_in_real_chromium(tmp_path):
     (tmp_path / "index.html").write_text("""<!doctype html><html><body><pre id="out"></pre>
 <script type="module">
 import { buildTree } from "./js/views/model-bsp.js";
-import { loadVariant } from "./js/views/model-view.js";
+import { loadVariant, stretchDesign } from "./js/views/model-view.js";
 const out = {};
-for (const [key, group] of [["warship_05", "naval"], ["sub_12", "subs"], ["civil_transit", "naval"]]) {
+for (const [key, group] of [["warship_28", "naval"], ["passenger_01", "civil"], ["civil_transit", "naval"],
+                            ["warship_05", "naval"], ["sub_12", "subs"]]) {
   const module = await import(`./js/views/unit-variants-${group}.js`);
-  const data = module.VARIANTS[key];
+  let data = module.VARIANTS[key];
+  if (data.tk) data = stretchDesign((await import(`./js/views/tk/${data.tk}.js`)).MODEL, data.k);
   const verts = [];
   for (let i = 0; i < data.v.length; i += 3) verts.push([data.v[i] / 1000, data.v[i + 1] / 1000, data.v[i + 2] / 1000]);
   const newell = (points) => { const n = [0, 0, 0];

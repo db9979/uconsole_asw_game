@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-- This is U-Jagd 1.3.300 (`src/core/version.py`); saves are written as v53 and older saves from v38 on are lifted to v53 on load (`src/core/save_migrate.py`). Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 1.3.301 (`src/core/version.py`); saves are written as v53 and older saves from v38 on are lifted to v53 on load (`src/core/save_migrate.py`). Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
 - Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical, and so is `docs/plan-1.3.md` (the plan 1.3.0 was built from). Current resumable work is tracked in `docs/resume.md`.
@@ -51,6 +51,7 @@
 ## Data and localization
 
 - `data/contacts/*.json` is the single source of truth for built-in platform/acoustic/torpedo/decoy profile values. Load through `src/data/catalog.py`; do not duplicate JSON-owned values in Python. `tools/gen_contacts.py` is a strict validator despite its historical name; it never generates files.
+- `data/unit_models/tiefenkontakt.json.gz` (ship and submarine designs of Tiefenkontakt, MIT, same author) is generated: export with `tools/tiefenkontakt/export_models.mts` from a Tiefenkontakt checkout, then `tools/build_tk_models.py` (commit embedded); `src/ui/tk_models.py` maps catalog types to designs and `tools/gen_web_schema.py` writes the browser modules `data/commander/js/views/tk/`. Detailed partitions build in the background (`model_bsp.tree_if_ready`).
 - `data/editor_templates/*.json` supplies editor templates, while Python validators define acceptance and runtime code defines effectiveness. Validation success does not imply runtime support.
 - All new user-visible prose needs matching keys in `data/i18n/en.json` and `de.json`. English is the reference/fallback; catalogs require exact key parity and identical named placeholders. Use named placeholders only.
 - Route rendering through `Translator`, `localize`, `translation_scope`, and bounded layout helpers. Do not add direct `Font.render` prose; the test allowlist is technical labels only. Verify English, German, large text where relevant, and the pseudolocale/layout tests.

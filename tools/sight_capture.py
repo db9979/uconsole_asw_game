@@ -13,6 +13,11 @@ from __future__ import annotations
 import math
 
 from src.sensors.platform import MAST_DEPTH_M
+from src.ui import model_bsp
+
+# The game builds the detailed ship models in the background and shows the
+# flat silhouette meanwhile; the screenshots show the finished models.
+model_bsp.BACKGROUND = False
 
 # Hours of the world clock for the day and the night picture.
 SIGHT_TIMES = (("day", 11.0), ("night", 22.5))

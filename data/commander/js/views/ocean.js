@@ -170,14 +170,35 @@ export function gridSize(width, height) {
   return [Math.max(2, Math.round(width / (cell * 2))), Math.max(2, Math.round(height / cell))];
 }
 
-let canvas = null;
+// A page shows several sight pictures (binoculars, lookout strip, weather
+// picture) each animating every frame; the waves are shaded at most every
+// SEA_FRAME_MS per picture and the last shading is reused in between, while
+// a turned or tilted view is shaded again at once.
+export const SEA_FRAME_MS = 50;
+const shaded = new WeakMap();
 // The shaded sea below the moving horizon of view ``w`` (sight-scene.js).
 export function drawOcean(g, w, sky, colors, options) {
   const top = Math.max(0, Math.floor(Math.min(w.base(0), w.base(w.width))) - 1);
   if (top >= w.height || typeof document === "undefined") return;
   const width = w.width, height = w.height - top, [columns, rows] = gridSize(width, height);
-  const p = seaParams(sky, colors, options);
-  canvas ??= document.createElement("canvas");
+  const owner = g.canvas ?? g;
+  let last = shaded.get(owner);
+  if (!last) { last = {canvas: document.createElement("canvas"), at: -Infinity, view: ""}; shaded.set(owner, last); }
+  const canvas = last.canvas, now = performance.now();
+  const view = `${columns}x${rows}:${top}:${w.los.toFixed(2)}:${w.pxPerDeg.toFixed(3)}:${w.base(0).toFixed(1)}:${w.base(width).toFixed(1)}`;
+  if (view !== last.view || !(now - last.at < SEA_FRAME_MS)) {
+    last.view = view; last.at = now;
+    shadeInto(canvas, w, top, width, height, columns, rows, seaParams(sky, colors, options));
+  }
+  g.save();
+  g.beginPath(); g.moveTo(0, w.base(0)); g.lineTo(width, w.base(width)); g.lineTo(width, w.height); g.lineTo(0, w.height); g.closePath();
+  g.clip();
+  g.imageSmoothingEnabled = true;
+  g.drawImage(canvas, 0, top, width, height);
+  g.restore();
+}
+
+function shadeInto(canvas, w, top, width, height, columns, rows, p) {
   if (canvas.width !== columns || canvas.height !== rows) { canvas.width = columns; canvas.height = rows; }
   const small = canvas.getContext("2d"), image = small.createImageData(columns, rows), rgb = new Float64Array(3);
   const cellDeg = width / columns / w.pxPerDeg, minBelow = .5 * height / rows / w.pxPerDeg;
@@ -193,10 +214,4 @@ export function drawOcean(g, w, sky, colors, options) {
     }
   }
   small.putImageData(image, 0, 0);
-  g.save();
-  g.beginPath(); g.moveTo(0, w.base(0)); g.lineTo(width, w.base(width)); g.lineTo(width, w.height); g.lineTo(0, w.height); g.closePath();
-  g.clip();
-  g.imageSmoothingEnabled = true;
-  g.drawImage(canvas, 0, top, width, height);
-  g.restore();
 }

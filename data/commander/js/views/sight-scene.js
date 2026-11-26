@@ -7,6 +7,7 @@
 import { drawInScene } from "./model-view.js";
 import { DETAIL_MIN_PX, FOAM, NAV_LIGHT, PROFILES } from "./silhouette-profiles.js";
 import { drawOcean } from "./ocean.js";
+import { elevation, skyLayers } from "./sky.js";
 import { drawSightEvents } from "./sight-events.js";
 import { palette as themePalette } from "../core/palette.js";
 
@@ -313,10 +314,25 @@ function view(width, height, v) {
 
 const bodyFraction = (alt) => .12 + .7 * clamp(alt / BODY_MAX_ALT_DEG);
 
-function drawSky(g, w, sky, colors, t, haze, aloft = null) {
-  const gradient = g.createLinearGradient(0, w.skyY + 40 - w.height, 0, w.skyY + 40);
-  gradient.addColorStop(0, rgb(colors.sky[0])); gradient.addColorStop(1, rgb(colors.sky[1]));
-  g.fillStyle = gradient; g.fillRect(0, 0, w.width, w.height);
+// Where the eye has come on the sea (m east, north) by its own way: the waves
+// and the cloud deck hang on the sea (sight_scene._own_on_sea).
+function ownOnSea(g, v, t) {
+  const way = v.way ?? null, speed = way ? (Number(way.speed_kn) || 0) * 1852 / 3600 : 0;
+  const course = way ? (Number(way.course_deg) || 0) * RAD : 0;
+  return flow(g.canvas ?? g, t, [speed * Math.sin(course), speed * Math.cos(course)]);
+}
+
+const bodyElevation = (alt) => elevation(bodyFraction(alt));
+
+// Tiefenkontakt's sky (sky.js): the background, then the stars, the sun's
+// disc, the moon and aircraft, then the cloud deck over them.
+function drawSky(g, w, sky, colors, t, haze, aloft = null, v = {}) {
+  const [ownE, ownN] = ownOnSea(g, v, t);
+  const layers = skyLayers(g.canvas ?? g, w, sky, colors, {sunEl: bodyElevation(sky.sun_alt_deg),
+    moonEl: bodyElevation(sky.moon_alt_deg), visibility: Number(v.visibility_nm ?? VISIBILITY_MAX_NM), ownE, ownN, t});
+  g.imageSmoothingEnabled = true;
+  if (layers) g.drawImage(layers.back, 0, 0, w.width, w.height);
+  else { g.fillStyle = rgb(colors.sky[1]); g.fillRect(0, 0, w.width, w.height); }
   const stars = (1 - sky.light * 1.8) * (1 - sky.cloud) * (1 - haze);
   if (stars > .05) {
     for (const [bearing, alt, phase, speed, bright] of FIELD.stars) {
@@ -335,7 +351,7 @@ function drawSky(g, w, sky, colors, t, haze, aloft = null) {
   };
   if (sky.light > .05 && sky.sun_alt_deg > -1 && cover > .05 && w.visible(sky.sun_bearing, 2)) {
     const x = w.x(sky.sun_bearing), y = w.skyY - bodyFraction(sky.sun_alt_deg) * w.skyH;
-    disc(x, y, mix(mix(SUN_DAY, SUN_DUSK, sky.dusk), colors.sky[1], 1 - cover), [[radius * 3, .85], [radius * 2, .7]]);
+    disc(x, y, mix(mix(SUN_DAY, SUN_DUSK, sky.dusk), colors.sky[1], 1 - cover), layers ? [] : [[radius * 3, .85], [radius * 2, .7]]);
   }
   if (sky.light < .6 && sky.moon_alt_deg > 0 && sky.moon_illumination > .03 && cover > .05 && w.visible(sky.moon_bearing, 2)) {
     const x = w.x(sky.moon_bearing), y = w.skyY - bodyFraction(sky.moon_alt_deg) * w.skyH;
@@ -348,23 +364,7 @@ function drawSky(g, w, sky, colors, t, haze, aloft = null) {
     }
   }
   if (aloft) aloft();
-  if (sky.cloud > .2 && haze <= .85) {
-    const count = Math.floor(FIELD.clouds.length * clamp((sky.cloud - .15) / .85));
-    const drift = t * .05 * (Math.sin((sky.wind_from_deg - w.los) * Math.PI / 180) > 0 ? 1 : -1);
-    const moonlit = sky.light > .3 || (sky.moon_alt_deg > 0 && sky.moon_illumination > .3);
-    const base = mix(colors.cloud, colors.haze, haze * .6), rim = mix(colors.cloudRim, colors.haze, haze * .6);
-    for (const [start, alt, widthDeg, height, shade] of FIELD.clouds.slice(0, count)) {
-      const bearing = start + drift;
-      if (!w.visible(bearing, widthDeg)) continue;
-      const x = w.x(bearing), y = w.skyY - alt * w.skyH, cw = widthDeg * w.pxPerDeg, ch = Math.max(4, height * w.skyH * 1.6);
-      const puffs = [[0, 0, 1, .6], [-.25, -.25, .5, .6], [.2, -.3, .45, .7], [.3, .05, .5, .5]];
-      puffs.forEach(([dx, dy, fw, fh], index) => {
-        const ex = x + dx * cw, ey = y + dy * ch;
-        if (moonlit && index) { g.fillStyle = rgb(rim); g.beginPath(); g.ellipse(ex, ey - 1, fw * cw / 2, fh * ch / 2, 0, 0, Math.PI * 2); g.fill(); }
-        g.fillStyle = rgb(mix(base, colors.sky[0], .25 * shade)); g.beginPath(); g.ellipse(ex, ey, fw * cw / 2, fh * ch / 2, 0, 0, Math.PI * 2); g.fill();
-      });
-    }
-  }
+  if (layers) g.drawImage(layers.deck, 0, 0, w.width, w.height);
 }
 
 // Horizon motion seen lookRelDeg off the bow (src/ui/horizon.py view_motion):
@@ -495,9 +495,7 @@ function drawWay(g, w, colors, way, t, haze) {
 // The shaded sea of Tiefenkontakt (ocean.js, src/ui/ocean.py): the wave field
 // hangs on the sea, so the own way streams it past the eye.
 function drawShadedSea(g, w, sky, colors, v, t, haze, eye) {
-  const way = v.way ?? null, speed = way ? (Number(way.speed_kn) || 0) * 1852 / 3600 : 0;
-  const course = way ? (Number(way.course_deg) || 0) * RAD : 0;
-  const [ownE, ownN] = flow(g.canvas ?? g, t, [speed * Math.sin(course), speed * Math.cos(course)]);
+  const way = v.way ?? null, [ownE, ownN] = ownOnSea(g, v, t);
   drawOcean(g, w, sky, colors, {seaState: v.sea_state, visibility: v.visibility_nm, eye, ownE, ownN, t});
   if (way) drawWay(g, w, colors, way, t, haze);
 }
@@ -534,6 +532,21 @@ function drawLightning(g, w, sky) {
   g.lineWidth = 1;
 }
 
+// Rain as in Tiefenkontakt (sight_scene.rain_streaks): pale translucent
+// streaks, the near ones longer, faster and plainer than the far ones.
+const RAIN_COLOR = [180, 195, 202], RAIN_MAX = 70;
+export function rainStreaks(width, height, intensity, lateral, t) {
+  const streaks = [], pmod = (value, size) => ((value % size) + size) % size;
+  for (let i = 0; i < Math.floor(RAIN_MAX * 2 * intensity); i++) {
+    const near = 1 - pmod(i * .618034, 1), fall = 260 + 420 * near;
+    const length = 6 + 26 * near * (.6 + .4 * intensity);
+    const x = pmod(i * 97 + t * 40 * lateral * (.5 + near), width);
+    const y = pmod(i * 53 + t * fall, height + length) - length;
+    streaks.push([x, y, x + lateral * length * .4, y + length, (.14 + .3 * near) * (.5 + .5 * intensity)]);
+  }
+  return streaks;
+}
+
 function drawWeather(g, w, sky, colors, visibility, t, haze) {
   if (visibility < 3) {
     const band = w.height * (.1 + .25 * (1 - visibility / 3)), y0 = w.horizon - band / 2;
@@ -549,11 +562,12 @@ function drawWeather(g, w, sky, colors, visibility, t, haze) {
   const color = rgb(mix(mix([70, 96, 104], [196, 208, 212], sky.light), colors.haze, haze * .3));
   const mod = (value, size) => ((value % size) + size) % size;
   if (sky.precipitation === "rain") {
-    const length = 10 + 10 * sky.intensity;
-    for (let index = 0; index < Math.floor(70 * sky.intensity); index++) {
-      const x = mod(index * 97 + t * 40 * lateral, w.width), y = mod(index * 53 + t * 420, w.height);
-      line(g, [x, y], [x + lateral * length * .4, y + length], color);
+    const lit = .15 + .85 * (.05 + .95 * sky.light ** 2);
+    g.save(); g.strokeStyle = rgb(RAIN_COLOR.map((c) => Math.floor(c * lit))); g.lineWidth = 1;
+    for (const [x0, y0, x1, y1, alpha] of rainStreaks(w.width, w.height, sky.intensity, lateral, t)) {
+      g.globalAlpha = alpha; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
     }
+    g.restore();
   } else {
     g.fillStyle = color;
     for (let index = 0; index < Math.floor(60 * sky.intensity); index++) {
@@ -724,7 +738,7 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   // the own helicopter close aboard or over its deck) stands in front of the sea.
   const high = (row) => aloft(row) && row.elevation_deg >= LOW_AIR_DEG;
   const airborne = v.outlines.filter(high);
-  drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
+  drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null, v);
   drawShadedSea(g, w, sky, colors, v, t, haze, eye);
   drawLand(g, w, v, colors, sky.light);
   foamGlow = colors.glow;

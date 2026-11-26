@@ -17,7 +17,7 @@ import random
 import pygame
 
 from src.core import config
-from src.ui import hires, ocean, quality
+from src.ui import hires, ocean, quality, skyshade
 
 # Sky and sea (top, horizon) per light; night is the start screen's palette.
 SKY_NIGHT = ((3, 7, 16), (20, 44, 62))
@@ -303,8 +303,15 @@ def _draw_stars(s, view, sky, colors, t, haze):
             s.set_at((int(x), int(y)), color)
 
 
-def _draw_body(s, view, sky, colors, haze):
-    """The moon (night) or the sun (day and dusk) where the eye looks."""
+def _body_elevation(alt_deg: float) -> float:
+    """The stylised elevation (deg, ``skyshade.elevation``) a body at
+    ``alt_deg`` is drawn at."""
+    return float(skyshade.elevation(_body_fraction(alt_deg)))
+
+
+def _draw_body(s, view, sky, colors, haze, halo=True):
+    """The moon (night) or the sun (day and dusk) where the eye looks;
+    ``halo`` False leaves the sun's halo to the shaded sky."""
     light = sky["light"]
     moon = light < 0.6 and sky["moon_alt_deg"] > 0.0 and sky["moon_illumination"] > 0.03
     sun = light > 0.05 and sky["sun_alt_deg"] > -1.0
@@ -314,8 +321,9 @@ def _draw_body(s, view, sky, colors, haze):
         x = view.x(sky["sun_bearing"])
         y = view.alt_y(_body_fraction(sky["sun_alt_deg"]), x)
         color = blend(blend(SUN_DAY, SUN_DUSK, sky["dusk"]), colors["sky"][1], 1.0 - cover)
-        for r, k in ((radius * 3, 0.85), (radius * 2, 0.7)):
-            pygame.draw.circle(s, blend(color, colors["sky"][1], k), (int(x), int(y)), r)
+        if halo:
+            for r, k in ((radius * 3, 0.85), (radius * 2, 0.7)):
+                pygame.draw.circle(s, blend(color, colors["sky"][1], k), (int(x), int(y)), r)
         pygame.draw.circle(s, color, (int(x), int(y)), radius)
     if moon and view.visible(sky["moon_bearing"], 2.0) and cover > 0.05:
         x = view.x(sky["moon_bearing"])
@@ -365,6 +373,12 @@ def _draw_clouds(s, view, sky, colors, t, haze):
             if moonlit and k:
                 pygame.draw.ellipse(s, rim, rect.move(0, -1))
             pygame.draw.ellipse(s, color, rect)
+
+
+def _draw_cloud_deck(s, view, top, deck) -> None:
+    """The shaded cloud deck (``skyshade.layers``) over the sky, the stars
+    and the aircraft."""
+    s.blit(deck, (view.rect.x, top))
 
 
 def sea_aspect(wind_from_deg: float, line_of_sight: float) -> tuple:
@@ -557,13 +571,19 @@ def _draw_way(s, view, colors, way, t, haze):
             pygame.draw.lines(s, blend(foam, colors["crest"], strength), False, points, width)
 
 
+def _own_on_sea(view, t, way) -> tuple:
+    """Where the eye has come on the sea (m east, north) by its own way: the
+    waves and the cloud deck hang on the sea and stream past."""
+    speed = float(way.get("speed_kn") or 0.0) * 1852.0 / 3600.0 if way else 0.0
+    course = math.radians(float(way["course_deg"])) if way else 0.0
+    return flow(("ocean", tuple(view.rect)), t,
+                (speed * math.sin(course), speed * math.cos(course)))
+
+
 def _draw_ocean(s, view, sky, colors, sea_state, t, way, visibility_nm):
     """The shaded sea of Tiefenkontakt (``src/ui/ocean.py``): the wave
     field hangs on the sea, so the own way streams it past the eye."""
-    speed = float(way.get("speed_kn") or 0.0) * 1852.0 / 3600.0 if way else 0.0
-    course = math.radians(float(way["course_deg"])) if way else 0.0
-    own_e, own_n = flow(("ocean", tuple(view.rect)), t,
-                        (speed * math.sin(course), speed * math.cos(course)))
+    own_e, own_n = _own_on_sea(view, t, way)
     eye = float((way or {}).get("eye_m", DEFAULT_EYE_M))
     ocean.draw(s, view, sky, colors, sea_state=sea_state, visibility_nm=visibility_nm,
                eye_m=eye, own_e=own_e, own_n=own_n, t=t, level=quality.LEVEL)
@@ -685,19 +705,34 @@ def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: flo
     colors = palette(sky, haze)
     colors["haze_level"] = haze
     rect = view.rect
-    sky_img = _cached(_SKY_CACHE, (rect.w, rect.h, colors["sky"]),
-                      lambda: _gradient((rect.w, rect.h), *colors["sky"]))
-    # The sky stays still: its gradient meets the nominal horizon (moved by
-    # the optics' elevation); above it the zenith colour.
-    top = int(rect.y + view.sky_h + 40 + view.lift - rect.h)
-    if top > rect.y:
-        s.fill(colors["sky"][0], (rect.x, rect.y, rect.w, top - rect.y))
-    s.blit(sky_img, (rect.x, top))
+    if quality.LEVEL == "low":
+        sky_img = _cached(_SKY_CACHE, (rect.w, rect.h, colors["sky"]),
+                          lambda: _gradient((rect.w, rect.h), *colors["sky"]))
+        # The sky stays still: its gradient meets the nominal horizon (moved
+        # by the optics' elevation); above it the zenith colour.
+        top = int(rect.y + view.sky_h + 40 + view.lift - rect.h)
+        if top > rect.y:
+            s.fill(colors["sky"][0], (rect.x, rect.y, rect.w, top - rect.y))
+        s.blit(sky_img, (rect.x, top))
+        deck = None
+    else:
+        # Tiefenkontakt's sky (src/ui/skyshade.py): background, then the
+        # stars, the bodies and aircraft, then the cloud deck over them.
+        own_e, own_n = _own_on_sea(view, t, way)
+        top, back, deck = skyshade.layers(
+            view, sky, colors, visibility_nm=visibility_nm, own_e=own_e, own_n=own_n, t=t,
+            sun_el=_body_elevation(sky["sun_alt_deg"]),
+            moon_el=_body_elevation(sky["moon_alt_deg"]), level=quality.LEVEL)
+        if back is not None:
+            s.blit(back, (rect.x, top))
     _draw_stars(s, view, sky, colors, t, haze)
-    _draw_body(s, view, sky, colors, haze)
+    _draw_body(s, view, sky, colors, haze, halo=deck is None)
     if aloft is not None:
         aloft(colors)
-    _draw_clouds(s, view, sky, colors, t, haze)
+    if deck is None:
+        _draw_clouds(s, view, sky, colors, t, haze)
+    else:
+        _draw_cloud_deck(s, view, top, deck)
     if quality.LEVEL == "low":
         _draw_sea(s, view, sky, colors, sea_state, t, haze, way)
     else:
@@ -725,12 +760,7 @@ def draw_weather(s, view: View, sky: dict, colors: dict, *, visibility_nm: float
     lateral = math.sin(math.radians(sky["wind_from_deg"] - view.los + 180.0))
     color = blend(blend((70, 96, 104), (196, 208, 212), sky["light"]), colors["haze"], haze * 0.3)
     if kind == "rain":
-        count = int(RAIN_MAX * intensity)
-        length = 10 + 10 * intensity
-        for i in range(count):
-            x = rect.x + (i * 97 + t * 40 * lateral) % rect.w
-            y = rect.y + (i * 53 + t * 420) % rect.h
-            pygame.draw.line(s, color, (x, y), (x + lateral * length * 0.4, y + length), 1)
+        _draw_rain(s, rect, sky, intensity, lateral, t)
     else:
         count = int(SNOW_MAX * intensity)
         for i in range(count):
@@ -741,6 +771,37 @@ def draw_weather(s, view: View, sky: dict, colors: dict, *, visibility_nm: float
 
 LIGHTNING = (200, 196, 255)
 BOLT = (238, 236, 255)
+# Rain as in Tiefenkontakt: pale translucent streaks, the near ones longer,
+# faster and plainer than the far ones (drops at different distances).
+RAIN_COLOR = (180, 195, 202)
+_RAIN_LAYER = {}
+
+
+def rain_streaks(width: int, height: int, intensity: float, lateral: float, t: float):
+    """(x0, y0, x1, y1, alpha 0..1) of each rain streak in a picture."""
+    streaks = []
+    for i in range(int(RAIN_MAX * 2 * intensity)):
+        near = 1.0 - (i * 0.618034) % 1.0           # 1 close to the eye, 0 far
+        fall = 260.0 + 420.0 * near
+        length = 6.0 + 26.0 * near * (0.6 + 0.4 * intensity)
+        x = (i * 97 + t * 40.0 * lateral * (0.5 + near)) % width
+        y = (i * 53 + t * fall) % (height + length) - length
+        streaks.append((x, y, x + lateral * length * 0.4, y + length,
+                        (0.14 + 0.3 * near) * (0.5 + 0.5 * intensity)))
+    return streaks
+
+
+def _draw_rain(s, rect, sky, intensity, lateral, t):
+    layer = _RAIN_LAYER.get(rect.size)
+    if layer is None:
+        _RAIN_LAYER.clear()
+        layer = _RAIN_LAYER[rect.size] = pygame.Surface(rect.size, pygame.SRCALPHA)
+    layer.fill((0, 0, 0, 0))
+    lit = 0.15 + 0.85 * (0.05 + 0.95 * sky["light"] ** 2)
+    color = tuple(int(c * lit) for c in RAIN_COLOR)
+    for x0, y0, x1, y1, alpha in rain_streaks(rect.w, rect.h, intensity, lateral, t):
+        pygame.draw.line(layer, (*color, int(255 * alpha)), (x0, y0), (x1, y1), 1)
+    s.blit(layer, rect.topleft)
 
 
 def draw_lightning(s, view: View, sky: dict) -> None:

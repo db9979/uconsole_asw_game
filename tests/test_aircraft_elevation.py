@@ -57,6 +57,8 @@ def test_aircraft_hang_in_the_still_sky_while_ships_ride_the_swell(monkeypatch):
 
 def test_aircraft_fly_behind_the_clouds(monkeypatch):
     order = []
+    # The shaded cloud deck, or the plain clouds of the low graphics level.
+    monkeypatch.setattr(sight_scene, "_draw_cloud_deck", lambda *args: order.append("clouds"))
     monkeypatch.setattr(sight_scene, "_draw_clouds", lambda *args: order.append("clouds"))
     monkeypatch.setattr(horizon, "draw_outline",
                         lambda *args, aloft=False, **kw: order.append("aloft" if aloft else "ship"))

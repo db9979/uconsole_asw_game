@@ -4,6 +4,10 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.304
+
+Version 1.3.304 holt den Himmel aus Tiefenkontakt in Fernglas, Ausguckstreifen, Sehrohr und Wetterbild. Eine Wolkendecke folgt jetzt dem Bedeckungsgrad, von wenigen Schönwetterwolken über eine aufgelockerte Decke bis bedeckt: von der Sonnenseite beleuchtet mit hellen Köpfen, grauen Unterseiten und Silberrand, in der Dämmerung rot und nachts dunkel, zieht sie mit dem Wind und gleitet über das fahrende Schiff hinweg. Bei schönem Wetter stehen hohe Zirren am Himmel, die Sonne hat einen Hof, und am Horizont liegt ein Dunstband, das in Regen und Nebel dichter wird. Regen fällt in blassen Streifen, nah am Auge lang und weiter weg kurz. Der Browser zeichnet denselben Himmel. Die Grafikstufe „Sparsam“ behält den einfacheren Himmel. Spielstände bleiben v53.
+
 ## 1.3.303
 
 Version 1.3.303 holt die See aus Tiefenkontakt in Fernglas, Ausguckstreifen und Sehrohr. Die See ist jetzt schattiert wie eine echte Wasseroberfläche: zwölf Wellenzüge aus Wind und Seegang, von langer Dünung bis zu kurzer Kabbelung, mit dem Himmel gespiegelt in den Wellenhängen, dunklem blaugrünem Wasser darunter, der Glitzerbahn von Sonne oder Mond, Schaum auf den Kämmen bei steigender See, Gischtstreifen im Sturm, Regentropfen auf dem Wasser und Dunst zum Horizont hin. Die Wellen bleiben an ihrem Ort auf dem Wasser, die eigene Fahrt zieht sie also vorbei, und das Kielwasser zeigt sich als helleres, aufgewühltes Wasser. Fernglas und Sehrohr im Browser zeichnen dieselbe See. Auf der uConsole behält die Grafikstufe „Sparsam“ die leichteren Wellenreihen. Spielstände bleiben v53.

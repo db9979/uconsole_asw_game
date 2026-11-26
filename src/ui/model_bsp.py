@@ -11,6 +11,8 @@ the same tree with the same rules.
 
 from __future__ import annotations
 
+import threading
+
 import numpy as np
 
 # Plane distance under which a point counts as on the plane (model units,
@@ -213,6 +215,53 @@ class Tree:
 
 
 _TREES: dict = {}
+
+
+# Meshes with more faces than this (the detailed Tiefenkontakt designs) get
+# their partition built beside the game loop: the uConsole needs seconds for
+# one, and the eyepiece draws the flat silhouette until it is ready.
+BACKGROUND_FACES = 800
+BACKGROUND = True
+_PENDING: dict = {}
+_LOCK = threading.Lock()
+
+
+def tree_if_ready(key: str, mesh) -> Tree | None:
+    """The partition when built; a large mesh's first call starts building it
+    in the background and gives None (small meshes are built at once)."""
+    tree = _TREES.get(key)
+    if tree is not None and tree.mesh_id == id(mesh):
+        return tree
+    if not BACKGROUND or len(mesh.faces) <= BACKGROUND_FACES:
+        return tree_for(key, mesh)
+    with _LOCK:
+        if key in _PENDING:
+            return None
+        thread = _PENDING[key] = threading.Thread(target=_build, args=(key, mesh),
+                                                  name=f"bsp-{key}", daemon=True)
+    thread.start()
+    return None
+
+
+def _build(key: str, mesh) -> None:
+    try:
+        tree = Tree(mesh)
+        tree.mesh_id = id(mesh)
+        _TREES[key] = tree
+    finally:
+        with _LOCK:
+            _PENDING.pop(key, None)
+
+
+def wait_for_background() -> None:
+    """Blocks until every partition started in the background is built."""
+    while True:
+        with _LOCK:
+            threads = list(_PENDING.values())
+        if not threads:
+            return
+        for thread in threads:
+            thread.join()
 
 
 def tree_for(key: str, mesh) -> Tree:

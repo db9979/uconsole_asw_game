@@ -17,9 +17,28 @@ const GROUP_MODULES = {
   subs: () => import("./unit-variants-subs.js"),
 };
 
+// Tiefenkontakt designs (src/ui/tk_models.py), one module each, loaded when
+// a type drawn as one is first needed.
+const designs = new Map(), designLoading = new Map();
+
+function loadDesign(name) {
+  if (designs.has(name)) return Promise.resolve(true);
+  if (!/^[a-z_]+$/.test(name)) return Promise.resolve(false);
+  if (!designLoading.has(name)) {
+    designLoading.set(name, import(`./tk/${name}.js`).then((module) => {
+      designs.set(name, module.MODEL);
+      return true;
+    }).catch(() => false));
+  }
+  return designLoading.get(name);
+}
+
+// A variant is ready when its mesh, or the design it is drawn as, is loaded.
+const ready = (key) => variants.has(key) && (!variants.get(key).tk || designs.has(variants.get(key).tk));
+
 export function loadVariant(key) {
   if (!own(VARIANT_GROUPS, key)) return Promise.resolve(false);
-  if (variants.has(key)) return Promise.resolve(true);
+  if (ready(key)) return Promise.resolve(true);
   const group = VARIANT_GROUPS[key];
   if (!loading.has(group) && own(GROUP_MODULES, group)) {
     loading.set(group, GROUP_MODULES[group]().then((module) => {
@@ -28,14 +47,29 @@ export function loadVariant(key) {
       return true;
     }).catch(() => false));
   }
-  return (loading.get(group) || Promise.resolve(false)).then(() => variants.has(key));
+  return (loading.get(group) || Promise.resolve(false))
+    .then(() => (variants.has(key) && variants.get(key).tk ? loadDesign(variants.get(key).tk) : true))
+    .then(() => ready(key));
+}
+
+// The design's corners stretched to the type: y by ky, z above the
+// waterline by kup and below by kdown after the shift dz (as tk_models.stretched).
+export function stretchDesign(design, k) {
+  const [ky, kup, kdown, dz] = k;
+  const v = design.v.map((c, i) => {
+    if (i % 3 === 0) return c;
+    if (i % 3 === 1) return c * ky;
+    const z = c + dz * 1000;
+    return z * (z > 0 ? kup : kdown);
+  });
+  return { ...design, v };
 }
 
 // The model to draw for catalog type ``key`` of class ``cls``: its own
 // variant once loaded (the load starts here), the class model until then.
 export function modelKey(key, cls) {
   if (typeof key !== "string" || !own(VARIANT_GROUPS, key)) return cls;
-  if (variants.has(key)) return key;
+  if (ready(key)) return key;
   loadVariant(key);
   return cls;
 }
@@ -56,7 +90,8 @@ function newell(points) {
 function prepare(cls) {
   let mesh = prepared.get(cls);
   if (mesh) return mesh;
-  const data = (own(MODELS, cls) && MODELS[cls]) || variants.get(cls) || MODELS.unknown;
+  let data = (own(MODELS, cls) && MODELS[cls]) || variants.get(cls) || MODELS.unknown;
+  if (data.tk) data = designs.has(data.tk) ? stretchDesign(designs.get(data.tk), data.k) : MODELS.unknown;
   const verts = [];
   for (let i = 0; i < data.v.length; i += 3) verts.push([data.v[i] / 1000, data.v[i + 1] / 1000, data.v[i + 2] / 1000]);
   const sided = new Set(data.s);
@@ -173,7 +208,10 @@ function renderSceneSprite(cls, length, aob, color, surfaceOnly) {
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, width); canvas.height = Math.max(1, height);
   const g = canvas.getContext("2d");
-  const tone = Math.min(1.25, Math.max(.05, (color[0] + color[1] + color[2]) / 3 / 150));
+  const mean = (color[0] + color[1] + color[2]) / 3;
+  const tone = Math.min(1.25, Math.max(.05, mean / 150));
+  // How much of its own paint a ship shows (as unit_models.scene_vivid).
+  const vivid = Math.min(1, Math.max(0, (mean - 20) / 35)) * Math.min(1, Math.max(0, (130 - mean) / 75));
   const items = ordered(mesh, view);
   const px = (k) => [sx[k] - left, sy[k] - top];
   const lineColor = rgb(color.map((c) => Math.floor(c * .6)));
@@ -185,7 +223,9 @@ function renderSceneSprite(cls, length, aob, color, surfaceOnly) {
       continue;
     }
     const face = mesh.faces[mesh.tree.faceSrc[index]];
-    const fill = rgb(face.color.map((c, i) => .5 * c * shade * tone + .5 * color[i] * (.55 + .6 * shade)));
+    const fill = rgb(face.color.map((c, i) => Math.min(254, Math.max(0,
+      (1 - vivid) * (.5 * c * shade * tone + .5 * color[i] * (.55 + .6 * shade))
+      + vivid * (.8 * c * (.45 + .75 * shade) + .2 * color[i])))));
     g.fillStyle = fill; g.strokeStyle = fill; g.lineWidth = .5;
     g.beginPath();
     mesh.tree.faces[index].forEach((k, i) => (i ? g.lineTo(...px(k)) : g.moveTo(...px(k))));
@@ -216,9 +256,15 @@ function sceneSprite(cls, length, aob, color, surfaceOnly) {
 // it).  Returns the frame for its navigation lights, or null when it is too
 // small or not turned, so the caller draws the flat silhouette instead;
 // ``model`` is the identified type (its own variant and light positions).
+// Drawn length in steps of about 4 % (as unit_models.scene_length).
+export function sceneLength(width) {
+  const length = Math.floor(width);
+  return length - length % Math.max(1, Math.floor(length / 24));
+}
+
 export function drawInScene(g, cls, cx, base, width, color, aob, aloft = false, model = null) {
   if (!Number.isFinite(aob) || !SCENE_CLASSES.includes(cls) || width < SCENE_MIN_PX) return null;
-  const length = Math.floor(width);
+  const length = sceneLength(width);
   if (cls === "aircraft" && !aloft) base -= .25 * length;   // hovering over the horizon
   // An identified type is drawn as its own variant.
   const key = model === null ? cls : modelKey(model, cls);

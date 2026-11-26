@@ -21,7 +21,7 @@ import numpy as np
 import pygame
 
 from src.sensors import lookout_id
-from src.ui import model_bsp, silhouettes
+from src.ui import model_bsp, silhouettes, tk_models
 from src.ui import hires
 
 # The lookout's classes (the same silhouettes the eyepieces draw) plus the
@@ -40,6 +40,8 @@ MATERIALS = {
     "whale": (72, 84, 100), "belly": (150, 160, 170), "fish": (150, 172, 184),
     "jelly": (176, 146, 206), "pad": (78, 96, 86), "black": (44, 48, 54),
 }
+# The palette of the Tiefenkontakt designs (src/ui/tk_models.py).
+MATERIALS.update(tk_models.palette())
 MATERIAL_NAMES = tuple(MATERIALS)
 # Sea around a floating hull: an outline ring at the waterline.
 WATER = (42, 96, 116)
@@ -687,6 +689,13 @@ _SCENE_CACHE: dict = {}
 _COLORKEY = (255, 0, 255)
 
 
+def scene_length(width: float) -> int:
+    """Drawn length in px, in steps of about 4 % above 48 px: a ship closing
+    in renders a new picture now and then, not on every pixel it grows."""
+    length = int(width)
+    return length - length % max(1, length // 24)
+
+
 def scene_yaw(aob_deg: float) -> float:
     """Model yaw for an observer ``aob_deg`` off the bow (starboard
     positive): abeam to starboard the bow points right, bow on at 0."""
@@ -719,13 +728,9 @@ def _render_scene_sprite(cls, length_px, aob_deg, color, surface_only):
     sprite.fill(_COLORKEY)
     sprite.set_colorkey(_COLORKEY)
     shade, visible = _shading(mesh, view)
-    steel = np.asarray(color, dtype=float)
-    tone = min(1.25, max(0.05, float(steel.mean()) / 150.0))
-    shade = shade[:, None]
-    shades = np.clip(0.5 * mesh.colors * shade * tone + 0.5 * steel * (0.55 + 0.6 * shade),
-                     0, 254).astype(int)
+    shades = scene_shades(mesh.colors, shade, color)
     px, py = sx - left, sy - top
-    line_color = tuple(int(c * 0.6) for c in steel)
+    line_color = tuple(int(c * 0.6) for c in color)
     for kind, i in tree.order(view[2]):
         if kind:
             a, b = tree.lines[i]
@@ -743,6 +748,26 @@ def _render_scene_sprite(cls, length_px, aob_deg, color, surface_only):
         if cut < height:
             sprite.fill(_COLORKEY, (0, cut, width, height - cut))
     return sprite, (-left, -top)
+
+
+def scene_vivid(color) -> float:
+    """How much of its own paint a ship shows in the eyepiece (0..1), from
+    the scene's steel tone: full by day as in Tiefenkontakt's 3D sea, part
+    at dusk and night, fading into the haze and the dark."""
+    mean = float(np.mean(color))
+    return min(1.0, max(0.0, (mean - 20.0) / 35.0)) * min(1.0, max(0.0, (130.0 - mean) / 75.0))
+
+
+def scene_shades(colors, shade, color) -> np.ndarray:
+    """Face colours in the eyepiece: the materials lit by ``shade``, blended
+    with the scene's steel tone ``color`` (night, haze) by ``scene_vivid``."""
+    steel = np.asarray(color, dtype=float)
+    tone = min(1.25, max(0.05, float(steel.mean()) / 150.0))
+    shade = np.asarray(shade, dtype=float)[:, None]
+    dull = 0.5 * colors * shade * tone + 0.5 * steel * (0.55 + 0.6 * shade)
+    lit = 0.8 * colors * (0.45 + 0.75 * shade) + 0.2 * steel
+    vivid = scene_vivid(color)
+    return np.clip((1.0 - vivid) * dull + vivid * lit, 0, 254).astype(int)
 
 
 class _ScenePoints:
@@ -768,12 +793,15 @@ def draw_in_scene(s, cls: str, cx: float, base_y: float, width: float, color, *,
     flat silhouette instead."""
     if aob_deg is None or cls not in SCENE_CLASSES or width < SCENE_MIN_PX:
         return False
-    length_px = int(width)
+    length_px = scene_length(width)
     if cls == "aircraft" and not aloft:
         base_y -= 0.25 * length_px          # hovering over the horizon
     surface_only = cls != "aircraft"
-    # An identified type is drawn as its own variant (``model``).
+    # An identified type is drawn as its own variant (``model``), once its
+    # partition is ready (a detailed design builds in the background).
     key = model_key(model, cls) if model is not None else cls
+    if model_bsp.tree_if_ready(key, mesh_for(key)) is None:
+        return False
     # Colours in steps of 4 so a slowly changing sky rebuilds rarely.
     sprite, (ox, oy) = _scene_sprite(key, length_px, float(aob_deg),
                                      tuple(int(c) // 4 * 4 for c in color), surface_only)

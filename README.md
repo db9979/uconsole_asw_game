@@ -10,18 +10,19 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.300**
+Current release: **1.3.301**
 
-Release 1.3.300 puts the real ocean under the real coasts. Every one of
-the 128 sea areas now has its real seabed (NOAA ETOPO1, about 15 NM cells):
-shelf seas such as the North Sea or the Yellow Sea are 30-150 m deep, the
-open ocean several thousand metres, where convergence zones form. The sea
-surface temperature and the mixed layer follow the area's real monthly
-means (World Ocean Atlas 2023), from about 5 deg C in a northern winter to
-29 deg C in the tropics; a summer sea stratifies sharply and hides a deep
-submarine. Up to three fictional shoals remain, on the shelf only. Own maps
-keep the synthetic sea. Saves are v53; v38 to v52 saves still load, and a
-saved game keeps the chart it was saved with.
+Release 1.3.301 brings the ships of Tiefenkontakt, the browser submarine game,
+into the binoculars, the periscope and the contact analyzer. Corvettes,
+frigates and destroyers up to 160 m, container ships, tankers, bulk
+carriers, reefers, RoRo ships, general cargo ships, ferries, tugs, trawlers
+and every submarine type now show as detailed models with masts, cranes,
+containers, boats and guns, stretched to the real beam and draught of their
+type; carriers, cruisers, big destroyers, cruise ships and auxiliaries keep
+their own models. By day the ships show their paint; at night and
+in haze they fade to the dark outline as before. On the uConsole a detailed
+model is prepared in the background on first sight (the outline shows
+meanwhile). Saves stay v53.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

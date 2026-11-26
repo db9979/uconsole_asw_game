@@ -6878,7 +6878,7 @@
   "option.graphics.low": "Economy",
   "option.graphics.normal": "Normal",
   "option.graphics.full": "Full",
-  "option.graphics.help": "Economy: plain scaling, no radar afterglow; saves CPU. Normal (uConsole default): every effect. Full (Windows default): smooth chart lines. + auto: below 14 frames a second for 5 s, Economy by itself (ECO lamp). Picture only, never the simulation.",
+  "option.graphics.help": "Economy: plain scaling, no radar afterglow, simple wave rows; saves CPU. Normal (uConsole default): every effect. Full (Windows default): smooth chart lines. + auto: below 14 frames a second for 5 s, Economy by itself (ECO lamp). Picture only, never the simulation.",
   "option.graphics.auto": "{level} + auto Economy",
   "eco_lamp.tag": "ECO",
   "eco_lamp.label": "Automatic economy",

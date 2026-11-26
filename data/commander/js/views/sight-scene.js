@@ -6,6 +6,7 @@
 // (the view's ``sky`` block and outlines); the phase is the wall clock.
 import { drawInScene } from "./model-view.js";
 import { DETAIL_MIN_PX, FOAM, NAV_LIGHT, PROFILES } from "./silhouette-profiles.js";
+import { drawOcean } from "./ocean.js";
 import { drawSightEvents } from "./sight-events.js";
 import { palette as themePalette } from "../core/palette.js";
 
@@ -374,19 +375,8 @@ export function viewMotion(pitch, roll, lookRelDeg = 0) {
   return [Math.max(-40, Math.min(40, lift * 260)), Math.max(-.25, Math.min(.25, lean * .6))];
 }
 
-// The sea as seen (src/ui/sight_scene.py sea_aspect): head 1 into the sea,
-// -1 down-sea; cross +1 when the waves run left to right.
-export function seaAspect(windFromDeg, lineOfSight) {
-  const angle = (windFromDeg - lineOfSight) * Math.PI / 180;
-  return [Math.cos(angle), -Math.sin(angle)];
-}
-
-// Rows of waves between the horizon and the bottom (src/ui/sight_scene.py).
-const SEA_ROWS = 18;
-// Own way through the water (src/ui/sight_scene.py): rows per second and knot
-// toward the eye looking ahead, sideways stream per knot looking abeam; the
-// frigate's bow and stern from the bridge lookout, her beam and the Kelvin angle.
-const WAY_ROWS_PER_KN = .04, WAY_SIDE_PER_KN = .15;
+// The frigate's bow and stern from the bridge lookout, her beam and the Kelvin angle
+// (src/ui/sight_scene.py).
 const OWN_BOW_M = 40, OWN_STERN_M = 100, OWN_BEAM_M = 17, KELVIN_DEG = 19.47, WAKE_FOAM = 48, BOW_SPRAY = 28;
 const RAD = Math.PI / 180;
 // The periscope's eye just above the surface (config.UBOOT_SCOPE_EYE_HEIGHT_M).
@@ -440,8 +430,10 @@ function drawWay(g, w, colors, way, t, haze) {
       const left = seaPoint(w, stern - edge, d, eye), right = seaPoint(w, stern + edge, d, eye);
       edges[0].push(left); edges[1].push(right);
       if (previous) {
-        g.fillStyle = rgb(mix(colors.sea[0], colors.wave, (.04 + .1 * strength) * (1 - i / steps)));
+        g.globalAlpha = (.08 + .17 * strength) * (1 - i / steps);
+        g.fillStyle = rgb(colors.crest);
         path(g, [previous[0], previous[1], right, left]); g.fill();
+        g.globalAlpha = 1;
       }
       previous = [left, right];
     }
@@ -500,75 +492,15 @@ function drawWay(g, w, colors, way, t, haze) {
 // The sea as a field of wave rows in perspective: a clean horizon with fine
 // crests below it, toward the eye ever longer and higher waves, all moving
 // with the swell (bearing space, so the field slides past as the view turns).
-function drawSea(g, w, sky, colors, seaState, t, haze, way = null) {
-  const step = Math.max(4, Math.floor(w.width / 90));
-  const [head, cross] = seaAspect(sky.wind_from_deg, w.los), along = Math.abs(head);
-  const anchor = w.los * w.pxPerDeg;
-  const top = Math.min(w.base(0), w.base(w.width));
-  const gradient = g.createLinearGradient(0, top, 0, w.height);
-  gradient.addColorStop(0, rgb(colors.sea[0])); gradient.addColorStop(1, rgb(colors.sea[1]));
-  g.fillStyle = gradient; path(g, [[0, w.base(0)], [w.width, w.base(w.width)], [w.width, w.height], [0, w.height]]); g.fill();
-  const below = Math.max(1, w.height - w.horizon), nearAmp = (1.2 + .9 * seaState) * w.height / 280;
-  // Into or down the sea the rows come at the eye or run away (new rows are
-  // born at the horizon); across it they run sideways.  The own way adds the
-  // water streaming past: toward the eye ahead, away astern, bow to stern abeam.
-  const speed = way ? Number(way.speed_kn) || 0 : 0, rel = way ? (w.los - way.course_deg) * RAD : 0;
-  const [cycles, side] = flow(g, t, [.35 * head + WAY_ROWS_PER_KN * speed * Math.cos(rel),
-    cross + WAY_SIDE_PER_KN * speed * Math.sin(rel)]);
-  const roll = ((cycles % 1) + 1) % 1, born = Math.floor(cycles);
-  const trough = mix(colors.sea[0], colors.sea[1], .45);
-  for (let index = 0; index <= SEA_ROWS; index++) {
-    const f = (index + roll) / SEA_ROWS;
-    if (f > 1) continue;
-    const depth = below * f ** 1.9;
-    if (depth < 1) continue;
-    const near = depth / below, n = index - born;
-    const amp = Math.max(.35, nearAmp * near), wavelength = (10 + 150 * near) * (.45 + .9 * along);
-    const k = 2 * Math.PI / wavelength, drift = side * (4 + 40 * near), phase = n * 1.7 + t * 1.4 * (1 - along);
-    const points = [];
-    for (let x = -step; x < w.width + step; x += step) {
-      const u = (x + anchor - drift) * k + phase;
-      points.push([x, w.base(x) + depth - amp * (Math.sin(u) + .35 * Math.sin(2.1 * u + n))]);
-    }
-    let light = mix(mix(colors.sea[0], colors.wave, .35 + .65 * near), colors.haze, haze * (1 - near) * .6);
-    if (head < 0) light = mix(light, colors.sea[1], .35 * -head);   // down-sea: the waves' backs
-    const width = near > .55 && w.height >= 200 ? 2 : 1;
-    g.lineWidth = width;
-    if (near > .12) {
-      g.strokeStyle = rgb(mix(trough, colors.sea[1], f * .9));
-      path(g, points.map(([x, y]) => [x, y + Math.max(1, amp * .8)]), false); g.stroke();
-    }
-    g.strokeStyle = rgb(light); path(g, points, false); g.stroke();
-    if (seaState >= 4 && near > .08) {
-      // White caps on the highest crests.
-      const half = Math.max(1, wavelength * .08), every = Math.max(2, 9 - Math.floor(seaState));
-      for (let i = 1; i < points.length - 1; i++) {
-        const [x, y] = points[i];
-        if (y < points[i - 1][1] && y <= points[i + 1][1] && (((i * 7 + n * 3) % every) + every) % every === 0)
-          line(g, [x - half, y], [x + half, y], rgb(colors.crest), width);
-      }
-    }
-  }
-  g.lineWidth = 1;
-  line(g, [0, w.base(0)], [w.width, w.base(w.width)], rgb(mix(colors.crest, colors.haze, .4)));
+// The shaded sea of Tiefenkontakt (ocean.js, src/ui/ocean.py): the wave field
+// hangs on the sea, so the own way streams it past the eye.
+function drawShadedSea(g, w, sky, colors, v, t, haze, eye) {
+  const way = v.way ?? null, speed = way ? (Number(way.speed_kn) || 0) * 1852 / 3600 : 0;
+  const course = way ? (Number(way.course_deg) || 0) * RAD : 0;
+  const [ownE, ownN] = flow(g.canvas ?? g, t, [speed * Math.sin(course), speed * Math.cos(course)]);
+  drawOcean(g, w, sky, colors, {seaState: v.sea_state, visibility: v.visibility_nm, eye, ownE, ownN, t});
   if (way) drawWay(g, w, colors, way, t, haze);
-  let strength = 0, bearing = 0, glint = [150, 170, 170];
-  if (sky.light < .5 && sky.moon_alt_deg > 0) { strength = sky.moon_illumination * (1 - sky.light * 2); bearing = sky.moon_bearing; }
-  else if (sky.light >= .5 && sky.sun_alt_deg > -1) { strength = .8; bearing = sky.sun_bearing; glint = mix([226, 236, 236], SUN_DUSK, sky.dusk); }
-  strength *= (1 - clamp((sky.cloud - .5) * 2)) * (1 - haze);
-  if (strength > .1 && w.visible(bearing, 6)) {
-    const cx = w.x(bearing), color = rgb(mix(colors.sea[0], glint, strength));
-    for (let index = 0; index < 14; index++) {
-      const shimmer = Math.sin(t * 2.4 + index * 1.7);
-      if (shimmer < -.2) continue;
-      const y = w.base(cx) + 4 + index * index * .9;
-      if (y > w.height) break;
-      const half = (4 + index * 2.5 * (.5 + .5 * shimmer)) * (w.width / 600 + .4);
-      line(g, [cx - half, y], [cx + half, y], color);
-    }
-  }
 }
-
 // Lightning (src/world/thunder.py, src/ui/sight_scene.py draw_lightning):
 // the state carries a strike's brightness and bearing while it flashes; the
 // page holds each new strike for FLASH_MS of its own time so a 4 Hz state
@@ -793,7 +725,7 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   const high = (row) => aloft(row) && row.elevation_deg >= LOW_AIR_DEG;
   const airborne = v.outlines.filter(high);
   drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
-  drawSea(g, w, sky, colors, v.sea_state, t, haze, v.way ?? null);
+  drawShadedSea(g, w, sky, colors, v, t, haze, eye);
   drawLand(g, w, v, colors, sky.light);
   foamGlow = colors.glow;
   // Back to front: the farthest first, so a nearer ship hides a farther one.

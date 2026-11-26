@@ -433,7 +433,13 @@ def _engine_world(game, seed: int) -> None:
             game._opfor_hold_s = 3600.0
             game.update(0.1)
 
-    run(90.0)
+    # Up to snorkel depth at the boat's own rate of ascent (slow and quiet
+    # from a deep start), then a little longer to settle there.
+    for _ in range(40):
+        if sub.depth <= sub.endurance.profile.snorkel_depth_m + 0.5:
+            break
+        run(15.0)
+    run(10.0)
     if sub.command_snorkel(True) is not True:
         raise RuntimeError("the engine-room boat did not start snorkelling")
     sub.damage_control.hull_leak(0.4, seed, where="stern")

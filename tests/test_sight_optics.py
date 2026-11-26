@@ -74,11 +74,14 @@ def _picture(**kwargs):
 
 
 def _horizon_row(surface):
-    """The row of the sharpest change down a clear column (sky to sea)."""
-    column = [surface.get_at((200, y))[:3] for y in range(30, 200)]
+    """The first sharp change down a clear strip (sky to sea), averaged over
+    a few columns; below it the shaded sea's own wave texture changes as
+    sharply, above it the sky only shades softly."""
+    column = [tuple(sum(surface.get_at((x, y))[k] for x in range(190, 211, 2)) / 11.0
+                    for k in range(3)) for y in range(30, 196)]
     jumps = [sum(abs(a - b) for a, b in zip(column[i], column[i + 1]))
              for i in range(len(column) - 1)]
-    return 30 + jumps.index(max(jumps))
+    return 30 + next(i for i, jump in enumerate(jumps) if jump > 10.0)
 
 
 def test_tilting_up_lowers_the_horizon_and_the_stabilizer_steadies_it():

@@ -4,6 +4,10 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.303
+
+Version 1.3.303 holt die See aus Tiefenkontakt in Fernglas, Ausguckstreifen und Sehrohr. Die See ist jetzt schattiert wie eine echte Wasseroberfläche: zwölf Wellenzüge aus Wind und Seegang, von langer Dünung bis zu kurzer Kabbelung, mit dem Himmel gespiegelt in den Wellenhängen, dunklem blaugrünem Wasser darunter, der Glitzerbahn von Sonne oder Mond, Schaum auf den Kämmen bei steigender See, Gischtstreifen im Sturm, Regentropfen auf dem Wasser und Dunst zum Horizont hin. Die Wellen bleiben an ihrem Ort auf dem Wasser, die eigene Fahrt zieht sie also vorbei, und das Kielwasser zeigt sich als helleres, aufgewühltes Wasser. Fernglas und Sehrohr im Browser zeichnen dieselbe See. Auf der uConsole behält die Grafikstufe „Sparsam“ die leichteren Wellenreihen. Spielstände bleiben v53.
+
 ## 1.3.302
 
 Version 1.3.302 stellt die echten Küsten und Berge auf den Horizont, im Look von Tiefenkontakt. Fernglas, Ausguckstreifen und Sehrohr zeigen jetzt das Land aller 128 Seegebiete in seiner echten Höhe (NOAA ETOPO1): vorn die Küste, dahinter die Bergketten in blasseren, dunstigeren Reihen, bis die Erdkrümmung sie verdeckt (ein Gebirge von 1000 m ab etwa 40 sm). Das Land ist nach Höhe und Steilheit gefärbt, Sand an der Wasserlinie, grüne Hügel, grauer Fels und Schnee oberhalb der Schneegrenze der Breite des Seegebiets, und verblasst in der Dämmerung und im Dunst. Fernglas und Sehrohr im Browser zeigen dasselbe Land. Eigene Karten behalten die angenommene Küste. Spielstände bleiben v53.

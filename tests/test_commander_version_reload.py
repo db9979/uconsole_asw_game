@@ -45,8 +45,11 @@ m.setPageVersion({meta});
 const results = {json.dumps(host_versions)}.map((v) => m.checkHostVersion(v));
 console.log(JSON.stringify({{ reloads, results }}));
 """
+    # The script takes well under a second; a busy Windows runner has been
+    # seen to hold a node start for over 30 s (CI of 1.3.303), so the limit
+    # only catches a hang, as in the other node tests.
     out = subprocess.run([node, "--input-type=module", "-e", script], check=True,
-                         capture_output=True, text=True, timeout=30).stdout
+                         capture_output=True, text=True, timeout=120).stdout
     return json.loads(out)
 
 

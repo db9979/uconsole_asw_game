@@ -4,6 +4,10 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.303
+
+Release 1.3.303 brings the sea of Tiefenkontakt into the binoculars, the lookout strip and the periscope. The sea is now shaded like a real water surface: twelve wave trains from the wind and the sea state, from long swell to short chop, with the sky reflected in the slopes, dark blue-green water below, the sun's or moon's glitter path, foam on the crests in a rising sea, spindrift streaks in a gale, rain pocks and haze toward the horizon. The waves stay where they are on the water, so your own way streams them past, and the wake shows as lighter churned water. The browser's binoculars and periscope draw the same sea. On the uConsole the graphics level "Economy" keeps the lighter wave rows. Saves stay v53.
+
 ## 1.3.302
 
 Release 1.3.302 puts the real coasts and mountains on the horizon, in the look of Tiefenkontakt. The binoculars, the lookout strip and the periscope now show the land of every one of the 128 sea areas at its real height (NOAA ETOPO1): the coast in front, the ranges behind it in paler, hazier rows, out to where the curve of the Earth hides them (a 1,000 m range from about 40 NM). The land is coloured by height and steepness, sand at the waterline, green hills, grey rock and snow above the snow line of the sea area's latitude, and fades at dusk and in haze. The browser's binoculars and periscope show the same land. Own maps keep the assumed coast. Saves stay v53.

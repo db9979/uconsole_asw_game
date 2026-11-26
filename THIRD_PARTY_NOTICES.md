@@ -31,6 +31,10 @@ zu prüfen und beizubehalten.
   db9979, derselbe Autor wie U-Jagd), erzeugt mit
   `tools/tiefenkontakt/export_models.mts` und `tools/build_tk_models.py`;
   der verwendete Commit steht in der Datei.
+- `src/ui/ocean.py` und `data/commander/js/views/ocean.js` sind eine
+  Übertragung der Wasseroberfläche von Tiefenkontakt (Wellenzüge aus
+  `waves.ts`, Schattierung aus dem Ozean-Shader; MIT-Lizenz, siehe oben) in
+  einen 2D-Zeichner.
 - `data/contacts/*.json` enthält für das Spiel erstellte Modellprofile. Namen
   realer oder realistisch anmutender Plattformklassen bezeichnen keine
   Übernahme geschützter Herstellerdaten und keine technische Verifikation.

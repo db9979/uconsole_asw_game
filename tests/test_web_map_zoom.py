@@ -20,7 +20,7 @@ def _run(script: str) -> dict:
     module = (JS / "core" / "map-zoom.js").as_uri()
     result = subprocess.run(
         [node, "--input-type=module", "-e", f"import * as z from {json.dumps(module)};\n{script}"],
-        capture_output=True, text=True, timeout=30, check=True)
+        capture_output=True, text=True, timeout=120, check=True)
     return json.loads(result.stdout)
 
 

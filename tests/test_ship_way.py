@@ -49,7 +49,7 @@ def test_the_eyepiece_rim_darkens_the_corners_but_not_the_centre():
         assert rimmed.get_at((2, 198))[:3] == sight_scene.EYEPIECE_RIM
         assert rimmed.get_at((100, 100)) == plain.get_at((100, 100))
         quality.configure("low")
-        assert _picture(0.0, "scope").get_at((2, 198)) == plain.get_at((2, 198))
+        assert _picture(0.0, "scope").get_at((2, 198)) == _picture(0.0).get_at((2, 198))
     finally:
         quality.configure(previous)
 

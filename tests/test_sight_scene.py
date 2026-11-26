@@ -275,8 +275,10 @@ def test_the_lookout_pictures_carry_the_own_way():
                                     "course_deg": pytest.approx(game.ship.course % 360.0)}
     scene = (ROOT / "data/commander/js/views/sight-scene.js").read_text(encoding="utf-8")
     assert f"SCOPE_EYE_M = {config.UBOOT_SCOPE_EYE_HEIGHT_M}" in scene
-    for name in ("WAY_ROWS_PER_KN", "WAY_SIDE_PER_KN", "OWN_BOW_M", "OWN_STERN_M",
-                 "OWN_BEAM_M", "KELVIN_DEG", "WAKE_FOAM", "BOW_SPRAY"):
+    # (WAY_ROWS_PER_KN moves the wave rows of the uConsole's low level only:
+    # the browser always draws the shaded ocean.)
+    for name in ("OWN_BOW_M", "OWN_STERN_M", "OWN_BEAM_M", "KELVIN_DEG", "WAKE_FOAM",
+                 "BOW_SPRAY"):
         value = getattr(sight_scene, name)
         text = f"{value:g}".lstrip("0") if isinstance(value, float) and value < 1 else f"{value:g}"
         assert f"{name} = {text}" in scene, name

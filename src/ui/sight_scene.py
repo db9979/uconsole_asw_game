@@ -17,7 +17,7 @@ import random
 import pygame
 
 from src.core import config
-from src.ui import hires
+from src.ui import hires, ocean, quality
 
 # Sky and sea (top, horizon) per light; night is the start screen's palette.
 SKY_NIGHT = ((3, 7, 16), (20, 44, 62))
@@ -43,6 +43,8 @@ BRACKET = 18
 WIND_ARROW = (120, 214, 180)
 # Sky field in bearing space (cosmetic, fixed seed like the start screen).
 STAR_COUNT = 220
+# The bridge lookout's eye over the sea (m) when a picture names none.
+DEFAULT_EYE_M = 18.0
 CLOUD_COUNT = 26
 RAIN_MAX, SNOW_MAX = 70, 60
 # The sun and moon run 45 degrees high at their culmination; on screen the
@@ -433,6 +435,25 @@ def _offset_point(view, course: float, ahead_m: float, side_m: float, eye_m: flo
     return _sea_point(view, bearing, math.hypot(ahead_m, side_m), eye_m)
 
 
+def _draw_churn(s, rect, color, quads):
+    """The wake's churned water: lighter, translucent over whatever sea lies
+    below (the shaded ocean or the wave rows)."""
+    points = [p for _, quad in quads for p in quad]
+    if not points:
+        return
+    box = pygame.Rect(min(p[0] for p in points), min(p[1] for p in points), 0, 0)
+    box.width = int(max(p[0] for p in points) - box.x) + 2
+    box.height = int(max(p[1] for p in points) - box.y) + 2
+    box = box.clip(rect)
+    if box.width <= 0 or box.height <= 0:
+        return
+    layer = pygame.Surface(box.size, pygame.SRCALPHA)
+    for alpha, quad in quads:
+        pygame.draw.polygon(layer, (*color[:3], int(255 * alpha)),
+                            [(x - box.x, y - box.y) for x, y in quad])
+    s.blit(layer, box.topleft)
+
+
 def _draw_way(s, view, colors, way, t, haze):
     """Bow wave and wake of the own ship, in true perspective from the eye:
     the bow wave curls out from the bow (tilt down to see it), the wake runs
@@ -458,6 +479,7 @@ def _draw_way(s, view, colors, way, t, haze):
         steps = 16
         previous = None
         edges = ([], [])
+        quads = []
         for i in range(steps + 1):
             along = length * (i / steps) ** 1.6
             d = OWN_STERN_M + along
@@ -469,10 +491,10 @@ def _draw_way(s, view, colors, way, t, haze):
             edges[0].append(left)
             edges[1].append(right)
             if previous is not None:
-                calm = blend(colors["sea"][0], colors["wave"],
-                             (0.04 + 0.1 * strength) * (1.0 - i / steps))
-                pygame.draw.polygon(s, calm, [previous[0], previous[1], right, left])
+                quads.append(((0.08 + 0.17 * strength) * (1.0 - i / steps),
+                              [previous[0], previous[1], right, left]))
             previous = (left, right)
+        _draw_churn(s, rect, colors["crest"], quads)
         rim = blend(colors["sea"][0], colors["crest"], 0.15 + 0.3 * strength)
         if glow > 0.0:
             rim = blend(rim, GLOW, 0.6 * glow)
@@ -535,11 +557,25 @@ def _draw_way(s, view, colors, way, t, haze):
             pygame.draw.lines(s, blend(foam, colors["crest"], strength), False, points, width)
 
 
+def _draw_ocean(s, view, sky, colors, sea_state, t, way, visibility_nm):
+    """The shaded sea of Tiefenkontakt (``src/ui/ocean.py``): the wave
+    field hangs on the sea, so the own way streams it past the eye."""
+    speed = float(way.get("speed_kn") or 0.0) * 1852.0 / 3600.0 if way else 0.0
+    course = math.radians(float(way["course_deg"])) if way else 0.0
+    own_e, own_n = flow(("ocean", tuple(view.rect)), t,
+                        (speed * math.sin(course), speed * math.cos(course)))
+    eye = float((way or {}).get("eye_m", DEFAULT_EYE_M))
+    ocean.draw(s, view, sky, colors, sea_state=sea_state, visibility_nm=visibility_nm,
+               eye_m=eye, own_e=own_e, own_n=own_n, t=t, level=quality.LEVEL)
+    if way:
+        _draw_way(s, view, colors, way, t, colors["haze_level"])
+
+
 def _draw_sea(s, view, sky, colors, sea_state, t, haze, way=None):
-    """The sea as a field of wave rows in perspective: at the horizon a
-    fine, nearly flat line of small crests, toward the eye ever longer and
-    higher waves, all moving with the swell (bearing space, so the field
-    slides past as the line of sight turns)."""
+    """The sea as a field of wave rows in perspective (the low graphics
+    level): at the horizon a fine, nearly flat line of small crests, toward
+    the eye ever longer and higher waves, all moving with the swell (bearing
+    space, so the field slides past as the line of sight turns)."""
     rect = view.rect
     dy = math.tan(view.tilt) * rect.w / 2.0
     left, right = view.horizon - dy, view.horizon + dy
@@ -662,7 +698,10 @@ def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: flo
     if aloft is not None:
         aloft(colors)
     _draw_clouds(s, view, sky, colors, t, haze)
-    _draw_sea(s, view, sky, colors, sea_state, t, haze, way)
+    if quality.LEVEL == "low":
+        _draw_sea(s, view, sky, colors, sea_state, t, haze, way)
+    else:
+        _draw_ocean(s, view, sky, colors, sea_state, t, way, visibility_nm)
     colors["haze_level"] = haze
     return colors
 

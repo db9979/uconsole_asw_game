@@ -86,7 +86,7 @@ def test_web_twin_slides_edge_labels_apart_too():
               "for (const dx of [0, 8, -5, 3]) out.push(f.place(110, 16, around(300 + dx, -900, 110, 16)));"
               "console.log(JSON.stringify({out, edge: edgeAnchor(600, 400, 300, -900)}));")
     result = subprocess.run([node, "--input-type=module", "-e", script],
-                            capture_output=True, text=True, check=True, timeout=30)
+                            capture_output=True, text=True, check=True, timeout=120)
     data = json.loads(result.stdout)
     rects = [pygame.Rect(r["x"], r["y"], r["w"], r["h"]) for r in data["out"]]
     for a, b in itertools.combinations(rects, 2):
@@ -172,7 +172,7 @@ def test_web_twin_keeps_labels_off_lines_and_remembers_spots():
               "const east = beside(200, 150, 60, 14, 90)[0];"
               "console.log(JSON.stringify({a, b, east}));")
     result = subprocess.run([node, "--input-type=module", "-e", script],
-                            capture_output=True, text=True, check=True, timeout=30)
+                            capture_output=True, text=True, check=True, timeout=120)
     data = json.loads(result.stdout)
     a = pygame.Rect(data["a"]["x"], data["a"]["y"], data["a"]["w"], data["a"]["h"])
     assert not a.inflate(2, 2).clipline((100, 100), (180, 100))

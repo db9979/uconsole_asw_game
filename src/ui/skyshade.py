@@ -208,7 +208,9 @@ def layers(view, sky: dict, colors: dict, *, sun_el: float, moon_el: float,
     key = (tuple(rect), round(view.los, 2), round(view.lift, 1), view.sky_h,
            round(view.px_per_deg, 3), level, round(visibility_nm, 1), int(t / REUSE_S),
            round(own_e / REUSE_M), round(own_n / REUSE_M), round(sun_el, 1), round(moon_el, 1),
-           tuple(sorted((k, v) for k, v in sky.items() if isinstance(v, (int, float, str)))),
+           # The night sky turns slowly: the clock in steps of 0.01 h (36 s).
+           tuple(sorted((k, round(float(v), 2) if k == "hour" else v) for k, v in sky.items()
+                        if isinstance(v, (int, float, str)))),
            colors["sky"], colors["haze"])
     cached = _CACHE.get(key)
     if cached is not None:

@@ -202,45 +202,59 @@ export function addMilkyWay(back, value, at = 0) {
   for (let i = 0; i < 3; i++) back[at + i] = toSrgb(toLinear(back[at + i]) + value * MILKY_COLOR[i]);
 }
 
-// The stars of view ``w`` (sight-scene.js) added like light onto ``g``.
+// The stars of view ``w`` (sight-scene.js) added like light onto ``g``; the
+// layer is redrawn at most every STAR_FRAME_MS (the twinkle) or when the
+// view changes, as the sky's and the sea's shading are.
+export const STAR_FRAME_MS = 100;
 const layers = new WeakMap();
 export function drawStars(g, w, c, t) {
   if (!c.show || typeof document === "undefined") return;
   const topDeg = w.skyY / w.pxPerDeg + 1;
   if (topDeg <= 0) return;
-  const pts = points(c, w.los, w.fov, topDeg, t);
-  if (!pts.alpha.length) return;
   const owner = g.canvas ?? g, width = Math.max(1, Math.floor(w.width)), height = Math.max(1, Math.floor(w.height));
   let layer = layers.get(owner);
   if (!layer || layer.canvas.width !== width || layer.canvas.height !== height) {
     const canvas = document.createElement("canvas");
     canvas.width = width; canvas.height = height;
-    layer = {canvas, image: canvas.getContext("2d").createImageData(width, height), sum: new Float32Array(width * height * 3)};
+    layer = {canvas, image: canvas.getContext("2d").createImageData(width, height),
+      sum: new Float32Array(width * height * 3), touched: [], key: "", any: false};
     layers.set(owner, layer);
   }
-  const {image, sum} = layer, data = image.data, touched = [];
-  sum.fill(0);
-  for (let i = 0; i < pts.alpha.length; i++) {
-    const x0 = width / 2 + (mod(pts.bearing[i] - w.los + 180, 360) - 180) * w.pxPerDeg, y0 = w.skyY - pts.elev[i] * w.pxPerDeg;
-    const cx = Math.floor(x0), cy = Math.floor(y0), spread = 2 * pts.sigma[i] ** 2, light = pts.alpha[i] * 255;
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        const x = cx + dx, y = cy + dy;
-        if (x < 0 || x >= width || y < 0 || y >= height) continue;
-        const weight = Math.exp(-(dx * dx + dy * dy) / spread) * light, at = (y * width + x) * 3;
-        if (sum[at] === 0 && sum[at + 1] === 0 && sum[at + 2] === 0) touched.push(at);
-        for (let j = 0; j < 3; j++) sum[at + j] += pts.rgb[i * 3 + j] * weight;
+  const key = [w.los.toFixed(2), w.skyY.toFixed(1), w.pxPerDeg.toFixed(3), w.fov, c.lim.toFixed(3), c.gain.toFixed(3),
+    c.moonK.toFixed(3), c.ext.toFixed(3), c.hazeK.toFixed(2), c.lat, c.doy, c.hour, c.faint,
+    Math.floor(t * 1000 / STAR_FRAME_MS)].join("|");
+  if (key !== layer.key) {
+    layer.key = key;
+    const {image, sum} = layer, data = image.data;
+    for (const at of layer.touched) {
+      sum[at] = sum[at + 1] = sum[at + 2] = 0;
+      const px = at / 3 * 4;
+      data[px] = data[px + 1] = data[px + 2] = data[px + 3] = 0;
+    }
+    const touched = layer.touched = [];
+    const pts = points(c, w.los, w.fov, topDeg, t);
+    for (let i = 0; i < pts.alpha.length; i++) {
+      const x0 = width / 2 + (mod(pts.bearing[i] - w.los + 180, 360) - 180) * w.pxPerDeg, y0 = w.skyY - pts.elev[i] * w.pxPerDeg;
+      const cx = Math.floor(x0), cy = Math.floor(y0), spread = 2 * pts.sigma[i] ** 2, light = pts.alpha[i] * 255;
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const x = cx + dx, y = cy + dy;
+          if (x < 0 || x >= width || y < 0 || y >= height) continue;
+          const weight = Math.exp(-(dx * dx + dy * dy) / spread) * light, at = (y * width + x) * 3;
+          if (sum[at] === 0 && sum[at + 1] === 0 && sum[at + 2] === 0) touched.push(at);
+          for (let j = 0; j < 3; j++) sum[at + j] += pts.rgb[i * 3 + j] * weight;
+        }
       }
     }
+    for (const at of touched) {
+      const px = at / 3 * 4;
+      for (let j = 0; j < 3; j++) data[px + j] = sum[at + j];
+      data[px + 3] = 255;
+    }
+    layer.any = touched.length > 0;
+    if (layer.any) layer.canvas.getContext("2d").putImageData(image, 0, 0);
   }
-  data.fill(0);
-  for (const at of touched) {
-    const px = at / 3 * 4;
-    for (let j = 0; j < 3; j++) data[px + j] = sum[at + j];
-    data[px + 3] = 255;
-  }
-  const lg = layer.canvas.getContext("2d");
-  lg.putImageData(image, 0, 0);
+  if (!layer.any) return;
   g.save();
   g.globalCompositeOperation = "lighter";
   g.drawImage(layer.canvas, 0, 0);

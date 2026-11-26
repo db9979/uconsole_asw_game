@@ -119,7 +119,8 @@ export function skyLayers(owner, w, sky, colors, options) {
   const key = [columns, rows, w.los.toFixed(2), w.skyY.toFixed(1), w.skyH.toFixed(1), w.pxPerDeg.toFixed(3),
     Math.floor(options.t * 1000 / SKY_FRAME_MS), Math.round(options.ownE / 10), Math.round(options.ownN / 10),
     options.sunEl.toFixed(1), options.moonEl.toFixed(1), options.visibility.toFixed(1),
-    JSON.stringify(sky), colors.sky.join(), colors.haze.join()].join("|");
+    // The night sky turns slowly: the clock in steps of 0.01 h (36 s).
+    JSON.stringify({...sky, hour: Math.round(Number(sky.hour ?? 0) * 100)}), colors.sky.join(), colors.haze.join()].join("|");
   if (key === last.key) return last;
   last.key = key;
   const p = skyParams(sky, colors, options), night = options.night;

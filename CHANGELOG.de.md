@@ -4,6 +4,10 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.305
+
+Version 1.3.305 holt den Nachthimmel aus Tiefenkontakt in Fernglas, Ausguckstreifen und Sehrohr. Die Sterne sind jetzt die echten: Die 986 hellsten Sterne des Yale Bright Star Catalogue stehen an ihrem wirklichen Ort für die Breite des Seegebiets, den Tag im Jahr und die Bordzeit. So gehen die Sternbilder im Lauf der Nacht auf, wandern und gehen unter, wechseln mit den Jahreszeiten, und der Polarstern steht im Norden so hoch wie die eigene Breite. Helle Sterne sind größer und zeigen ihre Farbe; tief am Himmel sind sie schwächer und röter, funkeln stärker und versinken im Dunst. Sie kommen heraus, wenn die Sonne sinkt, werden im Mondlicht weniger und verschwinden hinter Wolken, Nebel und Regen. Fernglas und Sehrohr sammeln mehr Licht und zeigen viele schwächere Sterne, und in einer klaren, dunklen Nacht zieht die Milchstraße über den Himmel. Die Sterne behalten ihre echten Winkel: Neigt die Optik nach oben, um den Himmel zu sehen. Der Browser zeigt denselben Himmel. Die Grafikstufe „Sparsam“ behält das einfache Sternfeld. Spielstände bleiben v53.
+
 ## 1.3.304
 
 Version 1.3.304 holt den Himmel aus Tiefenkontakt in Fernglas, Ausguckstreifen, Sehrohr und Wetterbild. Eine Wolkendecke folgt jetzt dem Bedeckungsgrad, von wenigen Schönwetterwolken über eine aufgelockerte Decke bis bedeckt: von der Sonnenseite beleuchtet mit hellen Köpfen, grauen Unterseiten und Silberrand, in der Dämmerung rot und nachts dunkel, zieht sie mit dem Wind und gleitet über das fahrende Schiff hinweg. Bei schönem Wetter stehen hohe Zirren am Himmel, die Sonne hat einen Hof, und am Horizont liegt ein Dunstband, das in Regen und Nebel dichter wird. Regen fällt in blassen Streifen, nah am Auge lang und weiter weg kurz. Der Browser zeichnet denselben Himmel. Die Grafikstufe „Sparsam“ behält den einfacheren Himmel. Spielstände bleiben v53.

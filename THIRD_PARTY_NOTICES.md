@@ -37,6 +37,14 @@ zu prüfen und beizubehalten.
   einen 2D-Zeichner. `src/ui/skyshade.py` und `data/commander/js/views/sky.js`
   übertragen ebenso den Himmel von Tiefenkontakt (Himmels-Shader aus
   `sky.ts`: Wolkendecke, Zirren, Sonnenhof, Dunstband; MIT-Lizenz).
+- `data/sky/bright_stars.json` und `data/commander/js/views/star-catalog.js`
+  enthalten die 986 Sterne heller als 4,6 mag aus dem Yale Bright Star
+  Catalogue, 5. revidierte Ausgabe (Hoffleit & Warren 1991, VizieR V/50,
+  NASA/ADC, gemeinfrei), wie Tiefenkontakt sie packt (MIT-Lizenz), kopiert mit
+  `tools/build_star_catalog.py`; der verwendete Commit steht in der Datei.
+  `src/ui/stars.py` und `data/commander/js/views/stars.js` übertragen den
+  Sternhimmel von Tiefenkontakt (`astro.ts`, `stars.ts`, Milchstraße aus
+  `sky.ts`; MIT-Lizenz).
 - `data/contacts/*.json` enthält für das Spiel erstellte Modellprofile. Namen
   realer oder realistisch anmutender Plattformklassen bezeichnen keine
   Übernahme geschützter Herstellerdaten und keine technische Verifikation.

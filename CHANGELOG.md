@@ -4,6 +4,10 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.305
+
+Release 1.3.305 brings the night sky of Tiefenkontakt into the binoculars, the lookout strip and the periscope. The stars are now the real ones: the 986 brightest stars of the Yale Bright Star Catalogue stand in their real places for the sea area's latitude, the day of the year and the ship's clock, so the constellations rise, turn and set through the night and change with the seasons, and the Pole Star stands in the north as high as your latitude. Bright stars are bigger and show their colour; low down they are dimmer and redder, twinkle more and sink into the haze. They come out as the sun goes down, thin out in moonlight and hide behind clouds, fog and rain. The binoculars and the periscope gather more light and show many fainter stars, and on a clear dark night the Milky Way crosses the sky. The stars keep their true angles: tilt the optics up to look at the sky. The browser shows the same sky. The Economy graphics level keeps the simple star field. Saves stay v53.
+
 ## 1.3.304
 
 Release 1.3.304 brings the sky of Tiefenkontakt into the binoculars, the lookout strip, the periscope and the weather picture. A cloud deck now follows the cloud cover, from a few fair-weather clouds to a broken deck and overcast: lit from the sun's side with bright tops, grey bases and a silver lining, red at dusk and dark at night, it drifts with the wind and passes overhead as the ship moves. Fair weather shows high cirrus, the sun has a halo, and a haze band lies on the horizon that thickens in rain and fog. Rain falls in pale streaks, long close to the eye and short farther off. The browser draws the same sky. The Economy graphics level keeps the simpler sky. Saves stay v53.

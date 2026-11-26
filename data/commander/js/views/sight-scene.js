@@ -7,7 +7,8 @@
 import { drawInScene } from "./model-view.js";
 import { DETAIL_MIN_PX, FOAM, NAV_LIGHT, PROFILES } from "./silhouette-profiles.js";
 import { drawOcean } from "./ocean.js";
-import { elevation, skyLayers } from "./sky.js";
+import { elevation, hazeK, skyLayers } from "./sky.js";
+import { conditions as nightSky, drawStars } from "./stars.js";
 import { drawSightEvents } from "./sight-events.js";
 import { palette as themePalette } from "../core/palette.js";
 
@@ -29,16 +30,6 @@ const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value))
 export const mix = (a, b, k) => a.map((value, index) => Math.round(value + (b[index] - value) * clamp(k)));
 export const rgb = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
 const wrap = (deg) => ((deg % 360) + 540) % 360 - 180;
-
-// Stars and clouds in bearing space (fixed seed; cosmetic only).
-const FIELD = (() => {
-  let seed = 217;
-  const random = () => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
-  const stars = Array.from({length: 220}, () => [random() * 360, random() ** .8, random() * Math.PI * 2, .6 + random() * 1.6, random() < .12]);
-  const clouds = Array.from({length: 26}, () => [random() * 360, .25 + random() * .7, 6 + random() * 16, .05 + random() * .07, random()]);
-  return {stars, clouds};
-})();
 
 function pair(night, day, glow, light, dusk) {
   return night.map((color, index) => mix(mix(color, day[index], light), glow[index], dusk * .7));
@@ -306,7 +297,7 @@ function view(width, height, v) {
   const horizon = height / 2 + v.horizon_offset * steady * (height / 260) + lift;
   const tilt = v.horizon_tilt * steady;
   const skyH = Math.max(8, height / 2), skyY = skyH + lift;  // the sky stays still: nominal horizon
-  return {width, height, pxPerDeg, horizon, tilt, skyH, skyY, los: v.bearing,
+  return {width, height, pxPerDeg, horizon, tilt, skyH, skyY, los: v.bearing, fov: v.fov_deg,
     x: (bearing) => width / 2 + wrap(bearing - v.bearing) * pxPerDeg,
     base: (x) => horizon + Math.tan(tilt) * (x - width / 2),
     visible: (bearing, half = 0) => Math.abs(wrap(bearing - v.bearing)) <= v.fov_deg / 2 + half};
@@ -327,23 +318,15 @@ const bodyElevation = (alt) => elevation(bodyFraction(alt));
 // Tiefenkontakt's sky (sky.js): the background, then the stars, the sun's
 // disc, the moon and aircraft, then the cloud deck over them.
 function drawSky(g, w, sky, colors, t, haze, aloft = null, v = {}) {
-  const [ownE, ownN] = ownOnSea(g, v, t);
+  const [ownE, ownN] = ownOnSea(g, v, t), visibility = Number(v.visibility_nm ?? VISIBILITY_MAX_NM);
+  const night = nightSky(sky, {fov: w.fov, visibility, hazeK: hazeK(sky, visibility)});
   const layers = skyLayers(g.canvas ?? g, w, sky, colors, {sunEl: bodyElevation(sky.sun_alt_deg),
-    moonEl: bodyElevation(sky.moon_alt_deg), visibility: Number(v.visibility_nm ?? VISIBILITY_MAX_NM), ownE, ownN, t});
+    moonEl: bodyElevation(sky.moon_alt_deg), visibility, ownE, ownN, t, night});
   g.imageSmoothingEnabled = true;
   if (layers) g.drawImage(layers.back, 0, 0, w.width, w.height);
   else { g.fillStyle = rgb(colors.sky[1]); g.fillRect(0, 0, w.width, w.height); }
-  const stars = (1 - sky.light * 1.8) * (1 - sky.cloud) * (1 - haze);
-  if (stars > .05) {
-    for (const [bearing, alt, phase, speed, bright] of FIELD.stars) {
-      if (!w.visible(bearing)) continue;
-      const x = w.x(bearing), y = w.skyY - (.08 + .92 * alt) * w.skyH;
-      if (y < 2) continue;
-      const glow = (.55 + .45 * Math.sin(t * speed + phase)) * stars, level = Math.round((bright ? 150 : 90) * glow + 30 * stars);
-      g.fillStyle = rgb(mix(colors.sky[0], [level + 40, level + 40, Math.min(255, level + 70)], stars));
-      g.fillRect(Math.floor(x), Math.floor(y), bright ? 2 : 1, bright ? 2 : 1);
-    }
-  }
+  // The real stars at their true angles (stars.js), added like light.
+  drawStars(g, w, night, t);
   const cover = 1 - clamp((sky.cloud - .6) * 2.5), radius = Math.max(4, Math.floor(.55 * w.pxPerDeg));
   const disc = (x, y, color, glows) => {
     for (const [r, k] of glows) { g.fillStyle = rgb(mix(color, colors.sky[1], k)); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }

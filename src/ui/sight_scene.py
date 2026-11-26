@@ -14,10 +14,12 @@ from collections import OrderedDict
 import math
 import random
 
+import numpy as np
 import pygame
 
 from src.core import config
-from src.ui import hires, ocean, quality, skyshade
+from src.ui import hires, ocean, quality, skyshade, stars
+from src.world.atmosphere import DEFAULT_LATITUDE_DEG
 
 # Sky and sea (top, horizon) per light; night is the start screen's palette.
 SKY_NIGHT = ((3, 7, 16), (20, 44, 62))
@@ -109,7 +111,8 @@ def _body(hour: float) -> tuple:
 def sky_values(hour: float, lunar_age_days: float, moon_illumination: float,
                cloud_cover: float, precipitation: str, rain_intensity: float,
                wind_from_deg: float, glow: float = 0.0, storm: float = 0.0,
-               lightning=None) -> dict:
+               lightning=None, latitude: float | None = None,
+               day_of_year: float | None = None) -> dict:
     """The sky of the eyepieces from observed values only (detached)."""
     light, dusk = daylight(hour)
     sun_bearing, sun_alt = _body(hour)
@@ -133,7 +136,13 @@ def sky_values(hour: float, lunar_age_days: float, moon_illumination: float,
                 # the rain heavier; a strike lights the picture at its bearing.
                 storm=round(_clamp(storm), 4),
                 lightning=round(_clamp(lightning[0]), 4) if lightning else 0.0,
-                lightning_bearing=round(lightning[1] % 360.0, 2) if lightning else 0.0)
+                lightning_bearing=round(lightning[1] % 360.0, 2) if lightning else 0.0,
+                # Where and when the night sky stands (``src/ui/stars.py``):
+                # the ship's clock as local solar time.
+                hour=round(hour % 24.0, 4),
+                latitude=round(DEFAULT_LATITUDE_DEG if latitude is None else latitude, 3),
+                day_of_year=round(stars.DEFAULT_DAY_OF_YEAR if day_of_year is None
+                                  else day_of_year, 2))
 
 
 def sky_state(game) -> dict:
@@ -143,7 +152,9 @@ def sky_state(game) -> dict:
                       atmosphere["moon_illumination"], atmosphere["cloud_cover"],
                       atmosphere["precipitation"], atmosphere["rain_intensity"],
                       atmosphere["wind_from_deg"], game.world.glow(),
-                      game.world.thunderstorm(), game.world.lightning(game.sim_t))
+                      game.world.thunderstorm(), game.world.lightning(game.sim_t),
+                      latitude=game.world.latitude_deg(),
+                      day_of_year=game.world.ocean.day_of_year)
 
 
 def plain_sky(night: bool) -> dict:
@@ -301,6 +312,69 @@ def _draw_stars(s, view, sky, colors, t, haze):
             pygame.draw.circle(s, color, (int(x), int(y)), 1)
         else:
             s.set_at((int(x), int(y)), color)
+
+
+def star_kernel(points: dict, view) -> tuple:
+    """The stars of ``stars.points`` as additive light on the picture:
+    (x, y int arrays, rgb (N, 3) 0..255), each star a soft point spread
+    over its pixel and the eight round it."""
+    rect = view.rect
+    x0 = rect.centerx + ((points["bearing"] - view.los + 180.0) % 360.0 - 180.0) * view.px_per_deg
+    y0 = view.alt_y(0.0, 0.0) - points["elev"] * view.px_per_deg
+    cx, cy = np.floor(x0), np.floor(y0)
+    light = points["rgb"] * (points["alpha"] * 255.0)[:, None]
+    spread = 2.0 * points["sigma"] ** 2
+    xs, ys, rgb = [], [], []
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            weight = np.exp(-(dx * dx + dy * dy) / spread)
+            xs.append(cx + dx)
+            ys.append(cy + dy)
+            rgb.append(light * weight[:, None])
+    x = np.concatenate(xs).astype(np.int64)
+    y = np.concatenate(ys).astype(np.int64)
+    rgb = np.concatenate(rgb)
+    inside = ((x >= rect.left) & (x < rect.right) & (y >= rect.top) & (y < rect.bottom)
+              & (rgb.max(axis=1) >= 0.5))
+    x, y, rgb = x[inside], y[inside], rgb[inside]
+    if x.size == 0:
+        return x, y, rgb
+    # One sum per pixel where stars meet.
+    flat = (y - rect.top) * rect.w + (x - rect.left)
+    unique, where = np.unique(flat, return_inverse=True)
+    summed = np.stack([np.bincount(where, weights=rgb[:, i]) for i in range(3)], axis=1)
+    return rect.left + unique % rect.w, rect.top + unique // rect.w, summed
+
+
+def draw_night_stars(s, view, night: dict, t: float) -> None:
+    """The real stars (``src/ui/stars.py``) at their true angles over the
+    shaded sky, added to it like light."""
+    if not night["show"]:
+        return
+    rect = view.rect
+    top_deg = (view.alt_y(0.0, 0.0) - rect.top) / view.px_per_deg + 1.0
+    if top_deg <= 0.0:
+        return
+    points = stars.points(night, view.los, view.fov, top_deg, t)
+    if points["alpha"].size == 0:
+        return
+    x, y, rgb = star_kernel(points, view)
+    clip = s.get_clip()
+    keep = (x >= clip.left) & (x < clip.right) & (y >= clip.top) & (y < clip.bottom)
+    x, y, rgb = x[keep], y[keep], rgb[keep]
+    if x.size == 0:
+        return
+    try:
+        pixels = pygame.surfarray.pixels3d(s)
+    except (ValueError, pygame.error):
+        for px, py, add in zip(x, y, rgb):
+            base = s.get_at((int(px), int(py)))
+            s.set_at((int(px), int(py)), tuple(min(255, int(base[i] + add[i])) for i in range(3)))
+        return
+    try:
+        pixels[x, y] = np.minimum(255.0, pixels[x, y] + np.round(rgb)).astype(np.uint8)
+    finally:
+        del pixels
 
 
 def _body_elevation(alt_deg: float) -> float:
@@ -719,13 +793,18 @@ def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: flo
         # Tiefenkontakt's sky (src/ui/skyshade.py): background, then the
         # stars, the bodies and aircraft, then the cloud deck over them.
         own_e, own_n = _own_on_sea(view, t, way)
+        night = stars.conditions(sky, fov_deg=view.fov, visibility_nm=visibility_nm,
+                                 haze_k=skyshade.haze_k(sky, visibility_nm))
         top, back, deck = skyshade.layers(
             view, sky, colors, visibility_nm=visibility_nm, own_e=own_e, own_n=own_n, t=t,
             sun_el=_body_elevation(sky["sun_alt_deg"]),
-            moon_el=_body_elevation(sky["moon_alt_deg"]), level=quality.LEVEL)
+            moon_el=_body_elevation(sky["moon_alt_deg"]), level=quality.LEVEL, night=night)
         if back is not None:
             s.blit(back, (rect.x, top))
-    _draw_stars(s, view, sky, colors, t, haze)
+    if deck is None:
+        _draw_stars(s, view, sky, colors, t, haze)
+    else:
+        draw_night_stars(s, view, night, t)
     _draw_body(s, view, sky, colors, haze, halo=deck is None)
     if aloft is not None:
         aloft(colors)

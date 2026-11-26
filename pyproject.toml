@@ -58,6 +58,7 @@ namespaces = true
 "data.fonts" = ["*.ttf", "*.txt"] # uConsole display face (OFL-1.1).
 "data.manual" = ["*.md"]
 "data.contact_analysis" = ["manifest.json", "*.png"]
+"data.sky" = ["*.json"] # The night sky's bright stars (Yale BSC via Tiefenkontakt).
 "data.unit_models" = ["*.json", "*.json.gz"] # Per-type 3D model dimensions (public sources) and the Tiefenkontakt designs.
 
 [tool.setuptools.dynamic]

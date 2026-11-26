@@ -5,6 +5,7 @@
 // cloud layer with its cover as alpha; display only.
 
 import { fbm } from "./ocean.js";
+import { addMilkyWay, milkyWay } from "./stars.js";
 
 const CLOUD_UV = 1800 / 2500, CLOUD_SCALE_M = 2500, CLOUD_WRAP = 2048, CLOUD_START = [17.31, 41.77];
 const WIND_ALOFT = 9, CELLS = 1800, MIN_CELL_PX = 24, RAD = Math.PI / 180;
@@ -24,6 +25,14 @@ const unit = (bearing, alt) => [Math.sin(bearing * RAD) * Math.cos(alt * RAD), M
 // tilted far up looks at the zenith, not past it.
 export const elevation = (fraction) => clamp(fraction / FRACTION_PER_DEG, -90, 90);
 
+// How steeply the haze band thins upward (skyshade.haze_k).
+export function hazeK(sky, visibility) {
+  const over = clamp(Number(sky.cloud)), fog = clamp(1 - visibility / 3);
+  const rain = sky.precipitation === "rain" || sky.precipitation === "snow" ? Number(sky.intensity) : 0;
+  const k = lerp(45, 14, Math.max(rain, over * .5));
+  return lerp(k, 2, fog);
+}
+
 // ``colors`` as sight-scene.js palette (sky [top, horizon], haze), 0..255.
 export function skyParams(sky, colors, {sunEl, moonEl, visibility, ownE, ownN, t}) {
   const light = Number(sky.light), over = clamp(Number(sky.cloud));
@@ -36,12 +45,11 @@ export function skyParams(sky, colors, {sunEl, moonEl, visibility, ownE, ownN, t
   const dusk = Number(sky.dusk), sunAlt = Number(sky.sun_alt_deg);
   const sunUp = clamp(Math.sin(sunAlt * RAD) * 6 + .2) * (1 - .95 * over) * (1 - .9 * rain) * (1 - .8 * fog);
   const moonUp = Number(sky.moon_illumination) * (1 - over) * (sky.moon_alt_deg > 0 ? 1 : 0) * Math.max(0, 1 - light * 2);
-  const k = lerp(45, 14, Math.max(rain, over * .5));
   return {
     top: colors.sky[0].map((c) => c / 255), horizon: colors.sky[1].map((c) => c / 255), haze: colors.haze.map((c) => c / 255),
     lit: .05 + .95 * light * light, light, dusk, over, cover: Math.min(1, over * 1.05),
     sun: unit(Number(sky.sun_bearing), sunEl), sunUp, sunColor: SUN_COLOR.map((a, i) => lerp(a, SUN_DUSK[i], dusk)),
-    moon: unit(Number(sky.moon_bearing), moonEl), moonUp, hazeK: lerp(k, 2, fog), wind, off,
+    moon: unit(Number(sky.moon_bearing), moonEl), moonUp, hazeK: hazeK(sky, visibility), wind, off,
   };
 }
 
@@ -111,10 +119,11 @@ export function skyLayers(owner, w, sky, colors, options) {
   const key = [columns, rows, w.los.toFixed(2), w.skyY.toFixed(1), w.skyH.toFixed(1), w.pxPerDeg.toFixed(3),
     Math.floor(options.t * 1000 / SKY_FRAME_MS), Math.round(options.ownE / 10), Math.round(options.ownN / 10),
     options.sunEl.toFixed(1), options.moonEl.toFixed(1), options.visibility.toFixed(1),
-    JSON.stringify(sky), colors.sky.join(), colors.haze.join()].join("|");
+    // The night sky turns slowly: the clock in steps of 0.01 h (36 s).
+    JSON.stringify({...sky, hour: Math.round(Number(sky.hour ?? 0) * 100)}), colors.sky.join(), colors.haze.join()].join("|");
   if (key === last.key) return last;
   last.key = key;
-  const p = skyParams(sky, colors, options);
+  const p = skyParams(sky, colors, options), night = options.night;
   for (const canvas of [last.back, last.deck]) {
     if (canvas.width !== columns || canvas.height !== rows) { canvas.width = columns; canvas.height = rows; }
   }
@@ -125,7 +134,9 @@ export function skyLayers(owner, w, sky, colors, options) {
     const y = (row + .5) * height / rows, el = elevation((w.skyY - y) / w.skyH);
     for (let column = 0; column < columns; column++) {
       const x = (column + .5) * width / columns;
-      const cover = shade(p, w.los + (x - width / 2) / w.pxPerDeg, el, back, cloud);
+      const bearing = w.los + (x - width / 2) / w.pxPerDeg;
+      const cover = shade(p, bearing, el, back, cloud);
+      if (night && night.milky > .002) addMilkyWay(back, milkyWay(night, bearing, (w.skyY - y) / w.pxPerDeg));
       const at = (row * columns + column) * 4;
       for (let i = 0; i < 3; i++) {
         backImage.data[at + i] = Math.round(back[i] * 255);

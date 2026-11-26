@@ -92,7 +92,7 @@ WEATHER_BOAT_FIELDS = (
 SKY_FIELDS = ("light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg",
               "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg",
               "moon_illumination", "moon_waxing", "glow", "storm", "lightning",
-              "lightning_bearing")
+              "lightning_bearing", "hour", "latitude", "day_of_year")
 # ``land``: the land in sight (``src/ui/horizon.py`` ``land_wire``: rays,
 # bands, base64 of rise, range and colour per band and ray) or null.
 LOOKOUT_GLASSES_FIELDS = ("course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset",

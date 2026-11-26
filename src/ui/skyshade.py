@@ -27,6 +27,7 @@ from collections import OrderedDict
 import numpy as np
 import pygame
 
+from src.ui import stars
 from src.ui.ocean import fbm, _smoothstep
 
 # Height of the deck over its noise scale (Tiefenkontakt: 1800 m, 2500 m).
@@ -73,6 +74,16 @@ def _unit(bearing_deg, alt_deg):
     return (math.sin(b) * math.cos(a), math.cos(b) * math.cos(a), math.sin(a))
 
 
+def haze_k(sky: dict, visibility_nm: float) -> float:
+    """How steeply the haze band thins upward: a thin band in clear air, a
+    wall in rain and fog."""
+    over = min(1.0, max(0.0, float(sky["cloud"])))
+    rain = float(sky["intensity"]) if sky["precipitation"] in ("rain", "snow") else 0.0
+    fog = min(1.0, max(0.0, 1.0 - visibility_nm / 3.0))
+    k = 45.0 + (14.0 - 45.0) * max(rain, over * 0.5)
+    return k + (2.0 - k) * fog
+
+
 def sky_params(sky: dict, colors: dict, *, sun_el: float, moon_el: float,
                visibility_nm: float, own_e: float, own_n: float, t: float) -> dict:
     """Everything the shading needs for one picture, plain numbers.
@@ -96,7 +107,6 @@ def sky_params(sky: dict, colors: dict, *, sun_el: float, moon_el: float,
     moon_up = (float(sky["moon_illumination"]) * (1.0 - over)
                * (1.0 if sky["moon_alt_deg"] > 0 else 0.0) * max(0.0, 1.0 - light * 2.0))
     top, horizon = (tuple(c / 255.0 for c in color) for color in colors["sky"])
-    k = 45.0 + (14.0 - 45.0) * max(rain, over * 0.5)
     return dict(
         top=top, horizon=horizon, haze=tuple(c / 255.0 for c in colors["haze"]),
         lit=0.05 + 0.95 * light * light, light=light, dusk=dusk, over=over,
@@ -104,7 +114,7 @@ def sky_params(sky: dict, colors: dict, *, sun_el: float, moon_el: float,
         sun=_unit(float(sky["sun_bearing"]), sun_el), sun_up=sun_up,
         sun_color=tuple(a + (b - a) * dusk for a, b in zip(SUN_COLOR, SUN_DUSK)),
         moon=_unit(float(sky["moon_bearing"]), moon_el), moon_up=moon_up,
-        haze_k=k + (2.0 - k) * fog, wind=wind, off=off)
+        haze_k=haze_k(sky, visibility_nm), wind=wind, off=off)
 
 
 def _cloud_dens(p, px, py):
@@ -189,15 +199,18 @@ def grid_size(width: int, height: int, level: str) -> tuple:
 
 def layers(view, sky: dict, colors: dict, *, sun_el: float, moon_el: float,
            visibility_nm: float, own_e: float, own_n: float, t: float,
-           level: str = "normal"):
+           level: str = "normal", night=None):
     """The sky of ``view`` (``sight_scene.View``): (top y, background
     surface, cloud surface with alpha), reused while nothing visible
-    changes."""
+    changes.  ``night`` (``stars.conditions``) adds the Milky Way at its
+    true angles."""
     rect = view.rect
     key = (tuple(rect), round(view.los, 2), round(view.lift, 1), view.sky_h,
            round(view.px_per_deg, 3), level, round(visibility_nm, 1), int(t / REUSE_S),
            round(own_e / REUSE_M), round(own_n / REUSE_M), round(sun_el, 1), round(moon_el, 1),
-           tuple(sorted((k, v) for k, v in sky.items() if isinstance(v, (int, float, str)))),
+           # The night sky turns slowly: the clock in steps of 0.01 h (36 s).
+           tuple(sorted((k, round(float(v), 2) if k == "hour" else v) for k, v in sky.items()
+                        if isinstance(v, (int, float, str)))),
            colors["sky"], colors["haze"])
     cached = _CACHE.get(key)
     if cached is not None:
@@ -217,6 +230,9 @@ def layers(view, sky: dict, colors: dict, *, sun_el: float, moon_el: float,
     fraction = (nominal - gy) / view.sky_h
     bearing = view.los + (gx - rect.centerx) / view.px_per_deg
     back, cloud, cover = shade(p, bearing.ravel(), elevation(fraction.ravel()))
+    if night is not None and night["milky"] > 0.002:
+        true_el = ((nominal - gy) / view.px_per_deg).ravel()
+        back = stars.add_milky_way(back, stars.milky_way(night, bearing.ravel(), true_el))
     back_px = np.round(back * 255.0).astype(np.uint8).reshape(rows, columns, 3)
     cloud_px = np.empty((rows, columns, 4), dtype=np.uint8)
     cloud_px[..., :3] = np.round(cloud * 255.0).astype(np.uint8).reshape(rows, columns, 3)
